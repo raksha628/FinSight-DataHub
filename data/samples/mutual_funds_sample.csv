@@ -1,0 +1,5 @@
+symbol,name,date,nav,category,fund_house,aum,expense_ratio
+VFIAX,Vanguard 500 Index Fund Admiral,2026-01-02,438.50,Large-Cap Equity,Vanguard,450000000000.00,0.0004,Vanguard
+FXAIX,Fidelity 500 Index Fund,2026-01-02,175.20,Large-Cap Equity,Fidelity,380000000000.00,0.00015,Fidelity
+SWPPX,Schwab S&P 500 Index Fund,2026-01-02,78.90,Large-Cap Equity,Charles Schwab,89000000000.00,0.0002,Schwab
+VTSAX,Vanguard Total Stock Market Index,2026-01-02,118.40,Total Stock Market,Vanguard,1300000000000.00,0.0004,Vanguard
