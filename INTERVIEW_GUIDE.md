@@ -45,12 +45,6 @@ User Prompt → Gemini LLM → Raw SQL → SqlValidator (AST Parsing) → Safe E
                                              └── 4. Enforce Query Timeout (5s) & Row Limits (100)
 ```
 
-### AST Security Rules Enforced:
-1. **Statement Type Enforcement**: Query must strictly parse into `net.sf.jsqlparser.statement.select.Select`. Any `Insert`, `Update`, `Delete`, `Drop`, or `Truncate` statement throws `BadRequestException`.
-2. **Comment Disallowance**: Rejects queries containing `--` or `/* */` to neutralize comment obfuscation.
-3. **Table Whitelisting**: `TablesNamesFinder` extracts all table references from the AST and verifies they match approved entities (`stocks`, `companies`, `etfs`, `mutual_funds`, `crypto`, `forex`, `sector_performance`).
-4. **Execution Bounds**: `QueryExecutor` executes queries via `JdbcTemplate` with a 5-second query timeout and max row cap of 100 rows.
-
 ---
 
 ## ⚡ 3. ETL Pipeline Architecture (Strategy Pattern)
@@ -59,30 +53,107 @@ User Prompt → Gemini LLM → Raw SQL → SqlValidator (AST Parsing) → Safe E
 Financial markets include diverse asset classes with distinct CSV columns, date formats, and precision requirements (e.g. US Equities vs 8-decimal Cryptocurrency rates).
 
 - **`EtlStrategy` (Interface)**: Defines `AssetType getAssetType()` and `EtlResult process(InputStream stream, UploadHistory audit)`.
-- **Concrete Strategies**:
-  - `StockEtlStrategy`: Resolves/creates `Company`, computes daily percentage return relative to previous trade date close.
-  - `EtfEtlStrategy`, `MutualFundEtlStrategy`, `CryptoEtlStrategy`, `ForexEtlStrategy`, `SectorPerformanceEtlStrategy`.
+- **Concrete Strategies**: `StockEtlStrategy`, `EtfEtlStrategy`, `MutualFundEtlStrategy`, `CryptoEtlStrategy`, `ForexEtlStrategy`, `SectorPerformanceEtlStrategy`.
 - **`EtlStrategyRegistry`**: Spring autowires all strategies into a `Map<AssetType, EtlStrategy>`, eliminating `if-else` branching (Open/Closed Principle).
-
-### Automated Folder Watcher (`FolderWatcherScheduler`)
-- Polling scheduler (`@Scheduled`) scans `data/incoming/` directory every 30 seconds.
-- Automatically infers `AssetType` from filename, invokes the ETL pipeline, and moves files to `data/archive/` (success) or `data/error/` (failure).
 
 ---
 
-## 🎯 4. Technical Interview Q&A Guide
+## 🎓 4. Core System Architectural Q&A
 
-### Q1: Why compile React frontend into Spring Boot `classpath:/static/` instead of separate microservices?
-> **Answer**: Single-JAR deployment significantly simplifies CI/CD, deployment orchestration, and horizontal scaling. It eliminates CORS complexity during development and production while providing single-command containerization via Docker.
+### Question 1: Why did you choose the Strategy Pattern for ETL?
+> **Answer**:
+> Financial markets deal with heterogeneous asset classes (Stocks, ETFs, Mutual Funds, Crypto, Forex, Sector Performance) that have distinct CSV schemas, validation rules, and decimal precisions.
+>
+> 1. **Open/Closed Principle (SOLID)**: Using `EtlStrategy` allows adding support for new financial assets (e.g., Commodities, Options) by creating a new strategy class without modifying existing ingestion logic.
+> 2. **Clean Registry Lookup**: `EtlStrategyRegistry` autowires all strategy implementations into a `Map<AssetType, EtlStrategy>`, eliminating brittle `if-else` or `switch` statements and enabling dynamic runtime strategy selection.
 
-### Q2: How do you solve the N+1 select problem in Spring Data JPA?
-> **Answer**: When querying `Stock` records that reference `Company`, Hibernate by default issues N separate queries for each company ID. We solve this by writing explicit JPQL queries with `JOIN FETCH s.company c`, instructing PostgreSQL to perform an inner join and populate company fields in a single query execution.
+---
 
-### Q3: Why calculate financial analytics inside SQL rather than Java Streams?
-> **Answer**: Processing millions of daily price rows in Java streams causes excessive heap allocation, memory copying, and GC pause overhead. PostgreSQL is written in C and optimized for set-based mathematical aggregations (`AVG`, `SUM`, `COUNT`, `WINDOW`). We push calculation to the database.
+### Question 2: Why use `JdbcTemplate` for AI-generated SQL instead of JPA?
+> **Answer**:
+> 1. **Dynamic Schema Projections**: JPA require pre-compiled `@Entity` mappings and typed JPQL/Criteria queries. Natural Language → SQL generates ad-hoc SQL with arbitrary column projections (e.g., `SELECT c.sector, AVG(s.close_price)...`) that do not map to a single entity.
+> 2. **Low-Level Execution Safeguards**: `JdbcTemplate` provides fine-grained control over execution parameters, allowing us to enforce query timeouts (`setQueryTimeout(5)`) and hard result set caps (`setMaxRows(100)`), protecting the JVM from memory exhaustion.
 
-### Q4: How is stateless authentication secured with JWT?
-> **Answer**: Requests include `Authorization: Bearer <token>`. `JwtAuthFilter` intercepts incoming requests, extracts the JWT, verifies the HMAC-SHA256 signature, extracts user claims and roles (`ROLE_ADMIN`, `ROLE_ANALYST`), and populates Spring Security's `SecurityContextHolder`. Sessions are stateless (`SessionCreationPolicy.STATELESS`).
+---
+
+### Question 3: Why is Redis useful in this application?
+> **Answer**:
+> 1. **Cache-Aside Strategy**: Calculating market overview statistics, moving averages (SMA-20/50), and sector aggregations requires expensive SQL `JOIN`s and window functions across historical price tables.
+> 2. **Sub-Millisecond Read Speeds**: Caching aggregate results in Redis RAM drops API response times from ~45ms down to < 2ms for dashboard users.
+> 3. **Automated Cache Invalidation**: When a new ETL job completes, the cache manager evicts affected Redis namespaces, ensuring data freshness without sacrificing high read throughput.
+
+---
+
+### Question 4: Why did you use DTOs instead of returning entities directly?
+> **Answer**:
+> 1. **Prevents Circular Reference Deadlocks**: JPA entities with bidirectional relationships (`@ManyToOne` / `@OneToMany`) trigger infinite recursion during Jackson JSON serialization.
+> 2. **Security & Information Hiding**: Prevents exposing internal database keys, auditing timestamps, or password hashes to public APIs.
+> 3. **Decoupled API Contracts**: Database schema refactorings (renaming a table column) do not break public REST API specifications. DTOs also allow returning calculated values (e.g. percentage return) that aren't stored directly in a single database column.
+
+---
+
+### Question 5: How is SQL injection prevented?
+> **Answer**:
+> 1. **For Standard REST APIs**: All database interactions use Spring Data JPA with parameterized queries (`:param` binding), guaranteeing complete separation between code and user inputs.
+> 2. **For AI Natural Language → SQL**: Since queries are generated dynamically by an LLM, parameterization alone is insufficient. We implement **AST-level security (`SqlValidator`)** using `JSQLParser`:
+>    - Reject SQL comments (`--`, `/* */`) to prevent injection tricks.
+>    - Enforce that statement strictly parses as `Select`. Reject `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `TRUNCATE`.
+>    - Extract table names via AST traversal and verify against a strict whitelist (`stocks`, `companies`, `etfs`, etc.).
+>    - Reject multi-statement semicolons and set a 5-second query execution timeout.
+
+---
+
+### Question 6: How does JWT authentication work?
+> **Answer**:
+> 1. **Authentication**: User POSTs credentials to `/api/auth/login`. `AuthenticationManager` verifies username/password via `BCryptPasswordEncoder` against PostgreSQL.
+> 2. **Token Generation**: Upon success, `JwtTokenProvider` constructs an HMAC-SHA256 signed JWT containing `sub` (username), `iat`, `exp` (24 hours), and user role claims (`ROLE_ADMIN`, `ROLE_ANALYST`).
+> 3. **Stateless Request Interception**: On subsequent HTTP calls, the client includes `Authorization: Bearer <token>`.
+> 4. **Spring Security Filter**: `JwtAuthFilter` intercepts the request, validates signature and expiry, builds a `UsernamePasswordAuthenticationToken`, and populates `SecurityContextHolder`. Sessions remain 100% stateless (`SessionCreationPolicy.STATELESS`).
+
+---
+
+### Question 7: How does the ETL pipeline process a CSV file?
+> **Answer**:
+> 1. **Trigger**: User uploads a file via REST API or `FolderWatcherScheduler` detects a CSV drop in `data/incoming/`.
+> 2. **Strategy Dispatch**: `EtlStrategyRegistry` identifies the matching `EtlStrategy` based on asset type.
+> 3. **Streaming CSV Parsing**: Apache Commons CSV streams records line-by-line via `InputStream`, preventing JVM memory spikes.
+> 4. **Validation & Normalization**: Row data is validated (non-null dates, valid prices). Invalid rows are tracked as `rejectedRows`.
+> 5. **Entity Upsert & Relation Linking**: Lookups/creates `Company` entity, constructs `Stock` price entity, calculates daily return percentage relative to prior close.
+> 6. **Batch Persistence & Audit**: Batch persists records to PostgreSQL, logs processing duration and counts into `UploadHistory`, and archives/error-routes the source file.
+
+---
+
+### Question 8: Why is the AI module separated from the analytics module?
+> **Answer**:
+> 1. **Single Responsibility Principle**: The Analytics module is a deterministic, high-performance aggregation engine. The AI module is an non-deterministic natural language translation and synthesis engine.
+> 2. **Fault Isolation & Resilience**: Third-party LLM latency spikes or API rate limits in Google Gemini will never impact standard REST analytics APIs, dashboard loading, or ETL uploads.
+> 3. **Isolated Security Constraints**: AI query execution requires AST sandboxing and strict execution limits, whereas Analytics APIs rely on standard JPA query boundaries.
+
+---
+
+### Question 9: What happens from the moment a CSV is uploaded until it appears on the dashboard?
+> **Answer**:
+> 1. **Client POST**: React frontend uploads CSV file to `POST /api/upload`.
+> 2. **ETL Execution**: Spring Boot executes `StockEtlStrategy`, parses records, persists entities into PostgreSQL `stocks` table, and logs audit record to `upload_history`.
+> 3. **Cache Invalidation**: Successful ingestion triggers Redis cache eviction for key `dashboard:overview` and `analytics:*`.
+> 4. **HTTP 200 Response**: Controller returns `UploadResponseDto` containing row counts and duration.
+> 5. **UI State Update**: React UI receives success response, invalidates local query state, and re-fetches `GET /api/dashboard/overview`.
+> 6. **SQL Aggregation & Re-render**: Backend executes set-based JPQL queries, returns updated JSON, and Recharts re-renders KPI cards, sector pie charts, and top gainers bar charts.
+
+---
+
+### Question 10: If one million rows are uploaded, what bottlenecks would you expect and how would you improve them?
+> **Answer**:
+> **Expected Bottlenecks**:
+> 1. *DB Network Roundtrips*: Saving 1M records individual `save()` calls causes 1 million database roundtrips, stalling the thread.
+> 2. *JVM Memory Pressure*: Loading 1M objects into Java heap risks `OutOfMemoryError` and long GC pauses.
+> 3. *Database Table Scans*: Analytics aggregations on 1M+ rows without indexing perform slow disk table scans.
+>
+> **Architectural Improvements**:
+> 1. *JDBC Batching*: Enable `hibernate.jdbc.batch_size=1000` and `reWriteBatchedInserts=true` to flush inserts in bulk chunks.
+> 2. *PostgreSQL `COPY` Command*: Use PostgreSQL native `COPY FROM STDIN` binary ingestion for 50,000+ rows/sec stream ingestion.
+> 3. *Database Indexing*: Ensure composite indexes on `(company_id, trade_date)` and `(trade_date, daily_return DESC)`.
+> 4. *Asynchronous Offloading*: Offload processing to `@Async` background worker threads or Kafka message queues with WebSocket client progress notifications.
 
 ---
 
