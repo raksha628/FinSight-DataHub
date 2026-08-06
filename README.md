@@ -200,7 +200,7 @@ Full documentation: `http://localhost:8080/swagger-ui`
 
 ---
 
-## 🎯 Interview Talking Points
+## 🎯 Key Engineering choices
 
 **Why Spring Boot over other frameworks?**
 Convention over configuration, massive ecosystem, production-ready out of the box (actuator, security, data).
