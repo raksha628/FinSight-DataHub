@@ -1,0 +1,23 @@
+# ────────────────────────────────────────────────────────────────────
+# Production Profile — Overrides for production deployment
+# Activate: SPRING_PROFILES_ACTIVE=prod
+# ────────────────────────────────────────────────────────────────────
+
+spring:
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        generate_statistics: false
+
+server:
+  tomcat:
+    max-threads: 200
+    min-spare-threads: 20
+
+logging:
+  level:
+    root: WARN
+    com.finsight: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN

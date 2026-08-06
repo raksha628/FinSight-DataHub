@@ -1,0 +1,90 @@
+package com.finsight.datahub.config;
+
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
+
+/**
+ * OpenAPI 3.0 / Swagger configuration for FinSight DataHub.
+ *
+ * <p>Documentation available at:
+ * <ul>
+ *   <li>Swagger UI:  {@code /swagger-ui}</li>
+ *   <li>API JSON:    {@code /api-docs}</li>
+ * </ul>
+ * </p>
+ *
+ * <p>All secured endpoints require a Bearer JWT token.
+ * Click "Authorize" in Swagger UI and paste your JWT to test authenticated APIs.</p>
+ */
+@Configuration
+public class SwaggerConfig {
+
+    @Value("${server.port:8080}")
+    private String serverPort;
+
+    @Bean
+    public OpenAPI openAPI() {
+        return new OpenAPI()
+                .info(apiInfo())
+                .servers(List.of(
+                        new Server()
+                                .url("http://localhost:" + serverPort)
+                                .description("Local Development Server"),
+                        new Server()
+                                .url("https://your-ec2-public-ip:8080")
+                                .description("AWS EC2 Production Server")
+                ))
+                .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
+                .components(new Components()
+                        .addSecuritySchemes("bearerAuth",
+                                new SecurityScheme()
+                                        .type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer")
+                                        .bearerFormat("JWT")
+                                        .in(SecurityScheme.In.HEADER)
+                                        .name("Authorization")
+                                        .description("Enter your JWT token (without 'Bearer ' prefix)")
+                        )
+                );
+    }
+
+    private Info apiInfo() {
+        return new Info()
+                .title("FinSight DataHub API")
+                .version("1.0.0")
+                .description("""
+                        ## FinSight DataHub — AI-Powered Financial Data Warehouse
+                        
+                        Enterprise-grade financial analytics platform featuring:
+                        - **JWT Authentication** with role-based access (ADMIN, ANALYST, VIEWER)
+                        - **CSV ETL Pipeline** for stocks, ETFs, crypto, forex, and mutual funds
+                        - **Analytics APIs** for top gainers, movers, sector performance, moving averages
+                        - **AI Natural Language Queries** powered by Google Gemini
+                        - **Professional Reports** in PDF and Excel formats
+                        - **Redis Caching** for high-performance analytics
+                        
+                        ### Authentication
+                        1. Register: `POST /api/auth/register`
+                        2. Login: `POST /api/auth/login`
+                        3. Copy the `token` from the response
+                        4. Click **Authorize** above and paste your token
+                        """)
+                .contact(new Contact()
+                        .name("FinSight DataHub")
+                        .email("admin@finsight.com"))
+                .license(new License()
+                        .name("MIT License")
+                        .url("https://opensource.org/licenses/MIT"));
+    }
+}

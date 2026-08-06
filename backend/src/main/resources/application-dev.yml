@@ -1,0 +1,14 @@
+# ────────────────────────────────────────────────────────────────────
+# Development Profile — Overrides for local development
+# Activate: SPRING_PROFILES_ACTIVE=dev  (default)
+# ────────────────────────────────────────────────────────────────────
+
+spring:
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.finsight: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG

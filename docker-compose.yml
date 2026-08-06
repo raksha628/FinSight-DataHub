@@ -1,0 +1,127 @@
+version: '3.9'
+
+# ═══════════════════════════════════════════════════════════════════
+# FinSight DataHub — Docker Compose
+# Orchestrates: Spring Boot App + PostgreSQL 15 + Redis 7
+#
+# Usage:
+#   Start:   docker-compose up -d
+#   Stop:    docker-compose down
+#   Rebuild: docker-compose up -d --build
+#   Logs:    docker-compose logs -f finsight-app
+# ═══════════════════════════════════════════════════════════════════
+
+services:
+
+  # ────────────────────────────────────────────
+  # PostgreSQL 15 — Primary Data Store
+  # ────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    container_name: finsight-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-finsight_db}
+      POSTGRES_USER: ${POSTGRES_USER:-finsight_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finsight_pass}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - finsight-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-finsight_user} -d ${POSTGRES_DB:-finsight_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ────────────────────────────────────────────
+  # Redis 7 — Caching Layer
+  # ────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: finsight-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-finsight_redis_pass} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - finsight-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-finsight_redis_pass}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ────────────────────────────────────────────
+  # FinSight DataHub — Spring Boot Application
+  # Serves both REST APIs and React frontend
+  # ────────────────────────────────────────────
+  finsight-app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: finsight-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      # Database
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-finsight_db}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-finsight_user}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-finsight_pass}
+      # Redis
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+      SPRING_DATA_REDIS_PASSWORD: ${REDIS_PASSWORD:-finsight_redis_pass}
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      # Gemini AI
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      # App
+      SPRING_PROFILES_ACTIVE: prod
+      DATA_INCOMING_PATH: /app/data/incoming
+      DATA_ARCHIVE_PATH: /app/data/archive
+      DATA_ERROR_PATH: /app/data/error
+    volumes:
+      # Mount data directories for ETL file processing
+      - ./data/incoming:/app/data/incoming
+      - ./data/archive:/app/data/archive
+      - ./data/error:/app/data/error
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - finsight-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+# ────────────────────────────────────────────
+# Volumes
+# ────────────────────────────────────────────
+volumes:
+  postgres_data:
+    name: finsight_postgres_data
+  redis_data:
+    name: finsight_redis_data
+
+# ────────────────────────────────────────────
+# Networks
+# ────────────────────────────────────────────
+networks:
+  finsight-network:
+    name: finsight-network
+    driver: bridge
