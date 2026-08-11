@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,10 +25,10 @@ public class JwtService {
 
     private static final Logger log = LoggerFactory.getLogger(JwtService.class);
 
-    @Value("${jwt.secret}")
+    @Value("${jwt.secret:finsight_default_jwt_secret_key_that_is_at_least_256_bits_long_for_security}")
     private String secretKey;
 
-    @Value("${jwt.expiration-ms}")
+    @Value("${jwt.expiration-ms:86400000}")
     private long expirationMs;
 
     // ── Token Generation ────────────────────────────────────────────────────
@@ -149,10 +150,15 @@ public class JwtService {
 
     /**
      * Derives the HMAC-SHA256 signing key from the configured secret.
-     * The secret is treated as Base64-encoded bytes.
+     * Supports both Base64-encoded keys and raw string secret keys containing special characters.
      */
     private SecretKey getSigningKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes;
+        try {
+            keyBytes = Decoders.BASE64.decode(secretKey);
+        } catch (Exception e) {
+            keyBytes = secretKey.getBytes(StandardCharsets.UTF_8);
+        }
         return Keys.hmacShaKeyFor(keyBytes);
     }
 

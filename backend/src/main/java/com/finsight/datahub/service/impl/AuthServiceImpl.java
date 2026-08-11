@@ -13,8 +13,7 @@ import com.finsight.datahub.security.JwtService;
 import com.finsight.datahub.service.AuthService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,16 +26,14 @@ public class AuthServiceImpl implements AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
-    private final UserRepository       userRepository;
-    private final PasswordEncoder      passwordEncoder;
-    private final JwtService           jwtService;
-    private final AuthenticationManager authenticationManager;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
-    public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService, AuthenticationManager authenticationManager) {
+    public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
-        this.authenticationManager = authenticationManager;
     }
 
     /**
@@ -98,30 +95,46 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
-        log.info("Login attempt for username: {}", request.getUsername());
+        String username = request.getUsername() != null ? request.getUsername().trim() : "";
+        String password = request.getPassword() != null ? request.getPassword().trim() : "";
+        log.info("Login attempt — username: '{}', raw password: '{}'", username, password);
 
-        // Delegate authentication to Spring Security.
-        // This internally calls CustomUserDetailsService + BCrypt comparison.
-        // Throws BadCredentialsException on failure (handled by GlobalExceptionHandler).
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getUsername(),
-                        request.getPassword()
-                )
-        );
+        User user = userRepository.findByUsername(username)
+                .orElseGet(() -> userRepository.findByUsername(username.toLowerCase()).orElse(null));
 
-        // Auth succeeded — load user and generate token
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new ResourceNotFoundException("User", "username", request.getUsername()));
+        if (user == null) {
+            log.warn("Login failed: User '{}' not found in database.", username);
+            throw new BadCredentialsException("Invalid username or password.");
+        }
 
-        String token = jwtService.generateToken(user);
-        log.info("Login successful — username={}, role={}", user.getUsername(), user.getRole());
+        log.info("User found — db username: '{}', db password hash: '{}'", user.getUsername(), user.getPassword());
 
-        return AuthResponse.builder()
-                .token(token)
-                .expiresIn(jwtService.getExpirationMs())
-                .user(mapToUserDTO(user))
-                .build();
+        boolean matches = passwordEncoder.matches(password, user.getPassword());
+        log.info("passwordEncoder.matches('{}', '{}') -> {}", password, user.getPassword(), matches);
+
+        if (!matches) {
+            log.warn("Login failed: Password mismatch for user '{}'", username);
+            throw new BadCredentialsException("Invalid username or password.");
+        }
+
+        if (!user.isActive()) {
+            log.warn("Login failed: User '{}' account is inactive", username);
+            throw new BadCredentialsException("User account is inactive.");
+        }
+
+        try {
+            String token = jwtService.generateToken(user);
+            log.info("Login successful — username={}, role={}, tokenGenerated=true", user.getUsername(), user.getRole());
+
+            return AuthResponse.builder()
+                    .token(token)
+                    .expiresIn(jwtService.getExpirationMs())
+                    .user(mapToUserDTO(user))
+                    .build();
+        } catch (Exception e) {
+            log.error("Error generating AuthResponse for user '{}': {}", username, e.getMessage(), e);
+            throw e;
+        }
     }
 
     /**
@@ -135,11 +148,6 @@ public class AuthServiceImpl implements AuthService {
         return mapToUserDTO(user);
     }
 
-    /**
-     * Maps a {@link User} entity to a {@link UserDTO}.
-     * In a larger system, this would be delegated to a MapStruct mapper.
-     * Kept inline here for simplicity since UserDTO has few fields.
-     */
     private UserDTO mapToUserDTO(User user) {
         return UserDTO.builder()
                 .id(user.getId())

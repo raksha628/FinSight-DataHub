@@ -17,6 +17,20 @@ public class SectorAvgPriceDto {
         this.companyCount = companyCount;
     }
 
+    public SectorAvgPriceDto(String sector, Double avgClosePrice, Long totalVolume, Long companyCount) {
+        this.sector = sector;
+        this.avgClosePrice = avgClosePrice != null ? BigDecimal.valueOf(avgClosePrice) : null;
+        this.totalVolume = totalVolume;
+        this.companyCount = companyCount;
+    }
+
+    public SectorAvgPriceDto(String sector, Number avgClosePrice, Number totalVolume, Number companyCount) {
+        this.sector = sector;
+        this.avgClosePrice = avgClosePrice != null ? BigDecimal.valueOf(avgClosePrice.doubleValue()) : null;
+        this.totalVolume = totalVolume != null ? totalVolume.longValue() : null;
+        this.companyCount = companyCount != null ? companyCount.longValue() : null;
+    }
+
     public String getSector() { return sector; }
     public void setSector(String sector) { this.sector = sector; }
 

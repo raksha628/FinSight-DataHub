@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -22,13 +22,18 @@ import PersonIcon from '@mui/icons-material/Person';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    // Clear any stale tokens on login screen mount
+    logout();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -159,33 +164,48 @@ const LoginPage = () => {
               disabled={loading}
               sx={{
                 py: 1.5,
-                borderRadius: 2,
+                borderRadius: 2.5,
                 fontWeight: 700,
                 fontSize: '1rem',
                 background: 'linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%)',
+                boxShadow: '0 4px 15px rgba(6, 182, 212, 0.3)',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #0891B2 0%, #2563EB 100%)',
+                },
               }}
             >
-              {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+              {loading ? <CircularProgress size={26} color="inherit" /> : 'Sign In'}
             </Button>
           </Box>
 
-          {/* Quick Credential Presets */}
-          <Box sx={{ mt: 3.5, pt: 2.5, borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <Typography variant="caption" sx={{ color: '#64748B', display: 'block', mb: 1, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
-              Quick Demo Credentials
+          <Box sx={{ mt: 3.5, pt: 3, borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
+            <Typography variant="caption" sx={{ color: '#64748B', display: 'block', mb: 1.5, fontWeight: 700, letterSpacing: 0.5 }}>
+              QUICK DEMO CREDENTIALS
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
               <Chip
                 label="Admin: admin / Admin@123"
                 clickable
                 onClick={() => handleQuickFill('admin', 'Admin@123')}
-                sx={{ bgcolor: 'rgba(239, 68, 68, 0.15)', color: '#F87171', fontWeight: 600, fontSize: '0.75rem' }}
+                sx={{
+                  bgcolor: 'rgba(239, 68, 68, 0.1)',
+                  color: '#EF4444',
+                  border: '1px solid rgba(239, 68, 68, 0.2)',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                }}
               />
               <Chip
                 label="Analyst: analyst / Analyst@123"
                 clickable
                 onClick={() => handleQuickFill('analyst', 'Analyst@123')}
-                sx={{ bgcolor: 'rgba(6, 182, 212, 0.15)', color: '#38BDF8', fontWeight: 600, fontSize: '0.75rem' }}
+                sx={{
+                  bgcolor: 'rgba(6, 182, 212, 0.1)',
+                  color: '#06B6D4',
+                  border: '1px solid rgba(6, 182, 212, 0.2)',
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                }}
               />
             </Box>
           </Box>

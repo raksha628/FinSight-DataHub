@@ -38,3 +38,4 @@ data/error/*
 !data/archive/.gitkeep
 !data/error/.gitkeep
 !data/samples/
+.env
