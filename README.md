@@ -1,9 +1,19 @@
 # FinSight DataHub
 
-> **AI-Powered Financial Data Warehouse & Market Analytics Platform**
->
-> Enterprise-grade financial analytics demonstrating Java 21, Spring Boot 3, PostgreSQL, Redis, React, and Gemini AI integration.
+AI-Powered Financial Data Warehouse & Market Analytics Platform
 
+## Features
+
+- Enterprise Spring Boot Architecture
+- Secure JWT Authentication
+- Automated CSV ETL Pipeline
+- Financial Analytics Dashboard
+- Redis Caching
+- AI Financial Copilot
+- Natural Language → SQL
+- AI Market Summaries
+- PDF & Excel Reports
+- Dockerized Deployment
 ---
 
 ## 🚀 Quick Start
@@ -30,13 +40,8 @@ npm install
 npm run build
 cd ..
 
-# Build the Spring Boot JAR
-cd backend
-mvn package -DskipTests
-cd ..
-
 # Start all services (PostgreSQL + Redis + Spring Boot)
-docker-compose up -d
+docker-compose up -d --build
 
 # Application runs at: http://localhost:8080
 # Swagger UI:          http://localhost:8080/swagger-ui
@@ -199,6 +204,35 @@ Full documentation: `http://localhost:8080/swagger-ui`
 | Testing + Docker + Polish | ✅ Complete |
 
 ---
+
++-----------------------------------------------------------------+
+|                       REACT DASHBOARD UI                        |
+|        (Bloomberg Dark Theme • MUI • Vite • Recharts)           |
++-----------------------------------------------------------------+
+                                 |
+                                 | REST / JWT Auth
+                                 v
++-----------------------------------------------------------------+
+|                    SPRING BOOT APPLICATION                      |
+|                                                                 |
+|   +-----------------------+     +---------------------------+   |
+|   |     ETL ENGINE        |     |       AI INTELLIGENCE     |   |
+|   |  • Strategy Pattern   |     |  • Gemini API / NL2SQL    |   |
+|   |  • Folder Watcher     |     |  • JSQLParser AST Guard   |   |
+|   +-----------------------+     +---------------------------+   |
+|                                                                 |
+|   +---------------------------------------------------------+   |
+|   |                    ANALYTICS ENGINE                     |   |
+|   |        • Set-Based SQL • Zero In-Memory Iteration       |   |
+|   +---------------------------------------------------------+   |
++-----------------------------------------------------------------+
+                                 |
+                                 | Flyway Migrations (V1–V9)
+                                 v
++-----------------------------------------------------------------+
+|                     POSTGRESQL & REDIS                          |
+|         (Time-Series Storage • Aggregations • Caching)          |
++-----------------------------------------------------------------+
 
 ## 🎯 Key Engineering choices
 
