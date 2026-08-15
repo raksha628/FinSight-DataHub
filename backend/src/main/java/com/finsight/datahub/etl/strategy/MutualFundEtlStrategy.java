@@ -97,7 +97,7 @@ public class MutualFundEtlStrategy implements EtlStrategy {
                     if (expRatioStr != null && !expRatioStr.isBlank()) mf.setExpenseRatio(new BigDecimal(expRatioStr));
                     mf.setUpload(uploadHistory);
 
-                    mutualFundRepository.save(mf);
+                    mutualFundRepository.saveAndFlush(mf);
                     result.incrementAccepted();
 
                 } catch (DateTimeParseException dtpe) {

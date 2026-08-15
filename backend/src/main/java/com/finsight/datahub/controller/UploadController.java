@@ -12,6 +12,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,8 +23,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/upload")
@@ -68,9 +69,12 @@ public class UploadController {
         summary = "Get ETL upload history",
         description = "Retrieves all past CSV ingestion runs with execution metrics and status."
     )
-    public ResponseEntity<ApiResponse<List<UploadHistoryDto>>> getUploadHistory() {
-        List<UploadHistoryDto> historyList = uploadService.getUploadHistory();
-        return ResponseEntity.ok(ApiResponse.success("Upload history retrieved successfully", historyList));
+    public ResponseEntity<ApiResponse<Page<UploadHistoryDto>>> getUploadHistory(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<UploadHistoryDto> historyPage = uploadService.getUploadHistory(pageable);
+        return ResponseEntity.ok(ApiResponse.success("Upload history retrieved successfully", historyPage));
     }
 
     @GetMapping("/{id}")

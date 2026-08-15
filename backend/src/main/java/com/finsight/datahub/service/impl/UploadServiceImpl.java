@@ -17,13 +17,15 @@ import com.finsight.datahub.repository.UploadHistoryRepository;
 import com.finsight.datahub.service.UploadService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -45,6 +47,7 @@ public class UploadServiceImpl implements UploadService {
     }
 
     @Override
+    @CacheEvict(cacheNames = {"analytics", "sector", "stocks"}, allEntries = true)
     public UploadResponseDto uploadCsv(MultipartFile file, AssetType assetType, User user) {
         if (file == null || file.isEmpty()) {
             throw new BadRequestException("Uploaded CSV file cannot be empty");
@@ -65,6 +68,7 @@ public class UploadServiceImpl implements UploadService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = {"analytics", "sector", "stocks"}, allEntries = true)
     public UploadResponseDto uploadFileStream(InputStream inputStream, String originalFilename, long fileSizeBytes, AssetType assetType, User user) {
         if (assetType == null) {
             throw new BadRequestException("AssetType must be specified");
@@ -91,37 +95,23 @@ public class UploadServiceImpl implements UploadService {
             result = strategy.process(inputStream, history);
         } catch (Exception e) {
             log.error("Fatal error during ETL execution for upload ID {}", history.getId(), e);
-            long duration = System.currentTimeMillis() - startTime;
-            history.setStatus(UploadStatus.FAILED);
-            history.setErrorMessage(e.getMessage());
-            history.setProcessedAt(LocalDateTime.now());
-            history.setProcessingMs(duration);
-            uploadHistoryRepository.save(history);
+            throw new BadRequestException("ETL Processing Failed: " + e.getMessage(), e);
+        }
 
-            UploadResponseDto errResp = new UploadResponseDto();
-            errResp.setUploadId(history.getId());
-            errResp.setFilename(originalFilename);
-            errResp.setAssetType(assetType);
-            errResp.setStatus(UploadStatus.FAILED);
-            errResp.setProcessingMs(duration);
-            errResp.setMessage("ETL Processing Failed: " + e.getMessage());
-            return errResp;
+        if (result.getRejectedRows() > 0) {
+            String errorMsg = result.getValidationReport().stream()
+                    .map(r -> "Row " + r.getRowNumber() + ": " + r.getReason())
+                    .collect(Collectors.joining("; "));
+            throw new BadRequestException("CSV validation failed: " + errorMsg);
         }
 
         long duration = System.currentTimeMillis() - startTime;
         history.setTotalRows(result.getTotalRows());
         history.setAcceptedRows(result.getAcceptedRows());
-        history.setRejectedRows(result.getRejectedRows());
+        history.setRejectedRows(0);
         history.setProcessedAt(LocalDateTime.now());
         history.setProcessingMs(duration);
-
-        if (result.getAcceptedRows() > 0 && result.getRejectedRows() == 0) {
-            history.setStatus(UploadStatus.SUCCESS);
-        } else if (result.getAcceptedRows() > 0 && result.getRejectedRows() > 0) {
-            history.setStatus(UploadStatus.PARTIAL);
-        } else {
-            history.setStatus(UploadStatus.FAILED);
-        }
+        history.setStatus(UploadStatus.SUCCESS);
 
         try {
             if (!result.getValidationReport().isEmpty()) {
@@ -140,7 +130,7 @@ public class UploadServiceImpl implements UploadService {
         response.setStatus(history.getStatus());
         response.setTotalRows(result.getTotalRows());
         response.setAcceptedRows(result.getAcceptedRows());
-        response.setRejectedRows(result.getRejectedRows());
+        response.setRejectedRows(0);
         response.setProcessingMs(duration);
         response.setValidationReport(result.getValidationReport());
         response.setMessage(String.format("Ingested %d of %d records successfully in %d ms",
@@ -151,11 +141,9 @@ public class UploadServiceImpl implements UploadService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<UploadHistoryDto> getUploadHistory() {
-        return uploadHistoryRepository.findAllByOrderByUploadedAtDesc()
-                .stream()
-                .map(this::mapToHistoryDto)
-                .collect(Collectors.toList());
+    public Page<UploadHistoryDto> getUploadHistory(Pageable pageable) {
+        Page<UploadHistory> historyPage = uploadHistoryRepository.findAllByOrderByUploadedAtDesc(pageable);
+        return historyPage.map(this::mapToHistoryDto);
     }
 
     @Override

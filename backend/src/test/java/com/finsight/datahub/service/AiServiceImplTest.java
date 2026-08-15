@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +44,8 @@ class AiServiceImplTest {
     private DashboardService dashboardService;
     @Mock
     private AiQueryHistoryRepository aiQueryHistoryRepository;
+    @Mock
+    private org.springframework.web.client.RestTemplate restTemplate;
 
     private AiServiceImpl aiService;
 
@@ -52,7 +54,7 @@ class AiServiceImplTest {
         aiService = new AiServiceImpl(
                 promptBuilder, sqlValidator, queryExecutor,
                 marketSummaryGenerator, insightGenerator, explanationGenerator,
-                dashboardService, aiQueryHistoryRepository
+                dashboardService, aiQueryHistoryRepository, restTemplate
         );
     }
 
@@ -61,6 +63,10 @@ class AiServiceImplTest {
         String question = "Show top gainers in Technology";
         User user = new User();
         user.setUsername("analyst");
+
+        String mockGeminiResponse = "{\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"SELECT * FROM stocks\"}]}}]}";
+        when(restTemplate.postForObject(any(String.class), any(), eq(String.class)))
+                .thenReturn(mockGeminiResponse);
 
         when(queryExecutor.executeSelectQuery(any())).thenReturn(List.of(Map.of("symbol", "AAPL", "close_price", 184.75)));
 

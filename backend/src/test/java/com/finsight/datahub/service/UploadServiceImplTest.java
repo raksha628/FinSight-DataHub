@@ -18,6 +18,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.ByteArrayInputStream;
@@ -105,12 +109,14 @@ class UploadServiceImplTest {
         history.setAssetType(AssetType.ETF);
         history.setStatus(UploadStatus.SUCCESS);
 
-        when(uploadHistoryRepository.findAllByOrderByUploadedAtDesc()).thenReturn(List.of(history));
+        PageRequest pageable = PageRequest.of(0, 10);
+        when(uploadHistoryRepository.findAllByOrderByUploadedAtDesc(pageable))
+                .thenReturn(new PageImpl<>(List.of(history), pageable, 1));
 
-        List<UploadHistoryDto> list = uploadService.getUploadHistory();
+        Page<UploadHistoryDto> page = uploadService.getUploadHistory(pageable);
 
-        assertEquals(1, list.size());
-        assertEquals(10L, list.get(0).getId());
-        assertEquals(AssetType.ETF, list.get(0).getAssetType());
-      }
+        assertEquals(1, page.getTotalElements());
+        assertEquals(10L, page.getContent().get(0).getId());
+        assertEquals(AssetType.ETF, page.getContent().get(0).getAssetType());
+    }
 }

@@ -96,7 +96,7 @@ public class SectorPerformanceEtlStrategy implements EtlStrategy {
                     if (uncStr != null && !uncStr.isBlank()) sp.setUnchangedCount(Integer.parseInt(uncStr));
                     sp.setUpload(uploadHistory);
 
-                    sectorPerformanceRepository.save(sp);
+                    sectorPerformanceRepository.saveAndFlush(sp);
                     result.incrementAccepted();
 
                 } catch (DateTimeParseException dtpe) {

@@ -82,9 +82,9 @@ const MarketAnalyticsPage = () => {
       }
 
       // Fetch technical moving averages for chart
-      const maRes = await analyticsService.getMovingAverages({ symbol: symbol || 'AAPL' });
+      const maRes = await analyticsService.getMovingAverages({ symbol: symbol || 'AAPL', page: 0, size: 250 });
       if (maRes && maRes.success) {
-        setMovingAverages(maRes.data || []);
+        setMovingAverages(maRes.data.content || []);
       }
     } catch (err) {
       console.error('Failed to fetch analytics', err);

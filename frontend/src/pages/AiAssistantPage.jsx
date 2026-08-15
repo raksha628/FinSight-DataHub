@@ -89,7 +89,6 @@ const AiAssistantPage = () => {
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
         setMessages((prev) => [...prev, aiMsg]);
-        fetchHistory();
       }
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Failed to execute AI query.';
@@ -102,6 +101,7 @@ const AiAssistantPage = () => {
         },
       ]);
     } finally {
+      fetchHistory();
       setLoading(false);
     }
   };

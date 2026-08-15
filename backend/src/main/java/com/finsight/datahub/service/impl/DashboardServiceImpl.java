@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -57,7 +56,7 @@ public class DashboardServiceImpl implements DashboardService {
         dto.setTopLoser(topLoser);
         dto.setHighestVolumeStock(highestVolume);
         dto.setSectorDistribution(analyticsService.getAveragePriceBySector(null));
-        dto.setRecentUploads(uploadService.getUploadHistory().stream().limit(5).collect(Collectors.toList()));
+        dto.setRecentUploads(uploadService.getUploadHistory(PageRequest.of(0, 5)).getContent());
 
         return dto;
     }

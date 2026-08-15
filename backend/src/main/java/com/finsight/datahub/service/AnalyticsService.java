@@ -26,7 +26,7 @@ public interface AnalyticsService {
 
     Page<PeriodReturnDto> getMonthlyReturns(LocalDate startDate, LocalDate endDate, String sector, String symbol, Pageable pageable);
 
-    List<MovingAverageDto> getMovingAverages(String symbol, LocalDate startDate, LocalDate endDate);
+    Page<MovingAverageDto> getMovingAverages(String symbol, LocalDate startDate, LocalDate endDate, Pageable pageable);
 
     Page<StockPerformanceDto> getHighestClosingPrice(LocalDate startDate, LocalDate endDate, String sector, String symbol, Pageable pageable);
 

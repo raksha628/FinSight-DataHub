@@ -14,8 +14,8 @@ export const uploadService = {
     return response.data;
   },
 
-  getUploadHistory: async () => {
-    const response = await api.get('/upload/history');
+  getUploadHistory: async (params = {}) => {
+    const response = await api.get('/upload/history', { params });
     return response.data;
   },
 

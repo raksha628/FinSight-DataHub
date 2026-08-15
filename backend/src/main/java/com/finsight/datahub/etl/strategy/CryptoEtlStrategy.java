@@ -115,7 +115,7 @@ public class CryptoEtlStrategy implements EtlStrategy {
                     if (marketCapStr != null && !marketCapStr.isBlank()) crypto.setMarketCap(new BigDecimal(marketCapStr));
                     crypto.setUpload(uploadHistory);
 
-                    cryptoRepository.save(crypto);
+                    cryptoRepository.saveAndFlush(crypto);
                     result.incrementAccepted();
 
                 } catch (DateTimeParseException dtpe) {

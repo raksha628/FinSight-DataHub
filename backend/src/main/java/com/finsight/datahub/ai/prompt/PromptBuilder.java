@@ -30,8 +30,10 @@ public class PromptBuilder {
                 RULES:
                 1. Return ONLY the raw SQL query. Do NOT include markdown blocks, ```sql tags, explanations, or commentary.
                 2. Use JOINs between stocks and companies using company_id = companies.id when symbol or sector is needed.
-                3. Sort and limit output reasonably (e.g. LIMIT 10).
-                4. Only use SELECT queries.
+                3. Sorting directions: Use ASC for 'least', 'lowest', 'bottom', or 'worst'. Use DESC for 'top', 'highest', 'best', or 'gainers'.
+                4. Dynamic LIMITs: Extract explicit numbers from user prompts (e.g., '5' -> LIMIT 5). Default to LIMIT 10 if unspecified.
+                5. Filtering: Add WHERE c.sector ILIKE '%%sector_name%%' when sectors are mentioned to allow case-insensitive partial matches.
+                6. Only use SELECT queries.
                 """, SCHEMA_CONTEXT, userQuestion);
     }
 

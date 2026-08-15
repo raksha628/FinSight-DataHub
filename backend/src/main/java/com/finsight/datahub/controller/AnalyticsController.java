@@ -124,12 +124,15 @@ public class AnalyticsController {
 
     @GetMapping("/moving-average")
     @Operation(summary = "Get technical SMA moving averages", description = "Calculates 20-day (SMA20) and 50-day (SMA50) simple moving averages.")
-    public ResponseEntity<ApiResponse<List<MovingAverageDto>>> getMovingAverage(
+    public ResponseEntity<ApiResponse<Page<MovingAverageDto>>> getMovingAverage(
             @RequestParam(required = false) String symbol,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
-        List<MovingAverageDto> result = analyticsService.getMovingAverages(symbol, startDate, endDate);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MovingAverageDto> result = analyticsService.getMovingAverages(symbol, startDate, endDate, pageable);
         return ResponseEntity.ok(ApiResponse.success("Moving averages retrieved successfully", result));
     }
 

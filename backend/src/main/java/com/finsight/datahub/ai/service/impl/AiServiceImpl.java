@@ -21,6 +21,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.web.client.RestTemplate;
+
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +44,8 @@ public class AiServiceImpl implements AiService {
     private final ExplanationGenerator explanationGenerator;
     private final DashboardService dashboardService;
     private final AiQueryHistoryRepository aiQueryHistoryRepository;
+    private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
     @Value("${gemini.api.key:ENV_KEY}")
     private String geminiApiKey;
@@ -48,7 +57,8 @@ public class AiServiceImpl implements AiService {
                          InsightGenerator insightGenerator,
                          ExplanationGenerator explanationGenerator,
                          DashboardService dashboardService,
-                         AiQueryHistoryRepository aiQueryHistoryRepository) {
+                         AiQueryHistoryRepository aiQueryHistoryRepository,
+                         RestTemplate restTemplate) {
         this.promptBuilder = promptBuilder;
         this.sqlValidator = sqlValidator;
         this.queryExecutor = queryExecutor;
@@ -57,41 +67,60 @@ public class AiServiceImpl implements AiService {
         this.explanationGenerator = explanationGenerator;
         this.dashboardService = dashboardService;
         this.aiQueryHistoryRepository = aiQueryHistoryRepository;
+        this.restTemplate = restTemplate;
+        this.objectMapper = new ObjectMapper();
     }
 
     @Override
-    @Transactional
     public AiQueryResponse processNaturalLanguageQuery(String question, User user) {
         log.info("Processing NL2SQL Query: '{}'", question);
         long startTime = System.currentTimeMillis();
 
-        String generatedSql = generateSqlFromQuestion(question);
+        String generatedSql = null;
+        try {
+            generatedSql = generateSqlFromQuestion(question);
 
-        // Security check using AST JSQLParser validator
-        sqlValidator.validate(generatedSql);
+            // Security check using AST JSQLParser validator
+            sqlValidator.validate(generatedSql);
 
-        // Execute query inside 5s timeout & 100 row cap
-        List<Map<String, Object>> results = queryExecutor.executeSelectQuery(generatedSql);
-        long duration = System.currentTimeMillis() - startTime;
+            // Execute query inside 5s timeout & 100 row cap
+            List<Map<String, Object>> results = queryExecutor.executeSelectQuery(generatedSql);
+            long duration = System.currentTimeMillis() - startTime;
 
-        // Save Query Audit History
-        AiQueryHistory history = new AiQueryHistory();
-        history.setQuestion(question);
-        history.setGeneratedSql(generatedSql);
-        history.setExecutionTimeMs(duration);
-        history.setRowCount(results.size());
-        history.setUser(user);
-        aiQueryHistoryRepository.save(history);
+            // Save Query Audit History
+            AiQueryHistory history = new AiQueryHistory();
+            history.setQuestion(question);
+            history.setGeneratedSql(generatedSql);
+            history.setExecutionTimeMs(duration);
+            history.setRowCount(results.size());
+            history.setUser(user);
+            history.setIsSuccessful(true);
+            aiQueryHistoryRepository.save(history);
 
-        AiQueryResponse response = new AiQueryResponse();
-        response.setQuestion(question);
-        response.setGeneratedSql(generatedSql);
-        response.setResults(results);
-        response.setRowCount(results.size());
-        response.setExecutionTimeMs(duration);
-        response.setExplanation(String.format("Executed NL2SQL engine in %d ms. Retrieved %d record(s).", duration, results.size()));
+            AiQueryResponse response = new AiQueryResponse();
+            response.setQuestion(question);
+            response.setGeneratedSql(generatedSql);
+            response.setResults(results);
+            response.setRowCount(results.size());
+            response.setExecutionTimeMs(duration);
+            response.setExplanation(String.format("Executed NL2SQL engine in %d ms. Retrieved %d record(s).", duration, results.size()));
 
-        return response;
+            return response;
+        } catch (Exception e) {
+            long duration = System.currentTimeMillis() - startTime;
+
+            AiQueryHistory history = new AiQueryHistory();
+            history.setQuestion(question);
+            history.setGeneratedSql(generatedSql != null ? generatedSql : "ERROR");
+            history.setExecutionTimeMs(duration);
+            history.setRowCount(0);
+            history.setUser(user);
+            history.setIsSuccessful(false);
+            history.setErrorMessage(e.getMessage());
+            aiQueryHistoryRepository.save(history);
+
+            throw new com.finsight.datahub.exception.ExternalApiException("AI Service encountered an error: " + e.getMessage(), e);
+        }
     }
 
     @Override
@@ -123,21 +152,39 @@ public class AiServiceImpl implements AiService {
     }
 
     private String generateSqlFromQuestion(String question) {
-        String q = question.toLowerCase();
-        if (q.contains("gainer") || q.contains("gaining") || q.contains("top return")) {
-            return "SELECT c.symbol, c.name, c.sector, s.trade_date, s.close_price, s.daily_return FROM stocks s JOIN companies c ON s.company_id = c.id ORDER BY s.daily_return DESC LIMIT 10";
-        }
-        if (q.contains("loser") || q.contains("losing") || q.contains("worst")) {
-            return "SELECT c.symbol, c.name, c.sector, s.trade_date, s.close_price, s.daily_return FROM stocks s JOIN companies c ON s.company_id = c.id ORDER BY s.daily_return ASC LIMIT 10";
-        }
-        if (q.contains("volume") || q.contains("active") || q.contains("most traded")) {
-            return "SELECT c.symbol, c.name, c.sector, s.trade_date, s.volume, s.close_price FROM stocks s JOIN companies c ON s.company_id = c.id ORDER BY s.volume DESC LIMIT 10";
-        }
-        if (q.contains("sector") || q.contains("average price")) {
-            return "SELECT c.sector, COUNT(c.id) AS total_companies, AVG(s.close_price) AS avg_close_price, SUM(s.volume) AS total_volume FROM stocks s JOIN companies c ON s.company_id = c.id GROUP BY c.sector ORDER BY avg_close_price DESC";
-        }
+        try {
+            String prompt = promptBuilder.buildSqlGenerationPrompt(question);
+            String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + geminiApiKey;
 
-        // Generic fallback query
-        return "SELECT c.symbol, c.name, c.sector, s.trade_date, s.close_price, s.volume FROM stocks s JOIN companies c ON s.company_id = c.id ORDER BY s.trade_date DESC LIMIT 10";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            String requestBody = String.format(
+                    "{\"contents\": [{\"parts\":[{\"text\": %s}]}]}",
+                    objectMapper.writeValueAsString(prompt)
+            );
+
+            HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
+            String response = restTemplate.postForObject(url, request, String.class);
+
+            JsonNode rootNode = objectMapper.readTree(response);
+            String rawSql = rootNode.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText();
+            
+            // Strip markdown blocks if Gemini includes them despite instructions
+            rawSql = rawSql.trim();
+            if (rawSql.startsWith("```sql")) {
+                rawSql = rawSql.substring(6);
+            } else if (rawSql.startsWith("```")) {
+                rawSql = rawSql.substring(3);
+            }
+            if (rawSql.endsWith("```")) {
+                rawSql = rawSql.substring(0, rawSql.length() - 3);
+            }
+            
+            return rawSql.trim();
+        } catch (Exception e) {
+            log.error("Failed to generate SQL from Gemini: ", e);
+            throw new RuntimeException("AI SQL Generation failed: " + e.getMessage(), e);
+        }
     }
 }

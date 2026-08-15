@@ -106,7 +106,7 @@ public class StockEtlStrategy implements EtlStrategy {
                     Company company = companyRepository.findBySymbol(symbol)
                             .orElseGet(() -> {
                                 Company newComp = new Company(symbol, symbol + " Corp", "General", "Equities", "USA", "NASDAQ");
-                                return companyRepository.save(newComp);
+                                return companyRepository.saveAndFlush(newComp);
                             });
 
                     // Calculate Daily Return relative to previous trading day
@@ -132,7 +132,7 @@ public class StockEtlStrategy implements EtlStrategy {
                     stock.setDailyReturn(dailyReturn);
                     stock.setUpload(uploadHistory);
 
-                    stockRepository.save(stock);
+                    stockRepository.saveAndFlush(stock);
                     result.incrementAccepted();
 
                 } catch (DateTimeParseException dtpe) {

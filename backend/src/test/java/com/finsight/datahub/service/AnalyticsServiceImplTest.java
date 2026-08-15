@@ -76,12 +76,13 @@ class AnalyticsServiceImplTest {
         when(stockRepository.findStockHistoryForMovingAverage(eq("MSFT"), any(), any()))
                 .thenReturn(List.of(s1, s2, s3));
 
-        List<MovingAverageDto> result = analyticsService.getMovingAverages("MSFT", null, null);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<MovingAverageDto> result = analyticsService.getMovingAverages("MSFT", null, null, pageable);
 
-        assertEquals(3, result.size());
-        assertEquals(new BigDecimal("100.0000"), result.get(0).getSma20());
-        assertEquals(new BigDecimal("105.0000"), result.get(1).getSma20()); // (100+110)/2
-        assertEquals(new BigDecimal("110.0000"), result.get(2).getSma20()); // (100+110+120)/3
+        assertEquals(3, result.getTotalElements());
+        assertEquals(new BigDecimal("100.0000"), result.getContent().get(0).getSma20());
+        assertEquals(new BigDecimal("105.0000"), result.getContent().get(1).getSma20()); // (100+110)/2
+        assertEquals(new BigDecimal("110.0000"), result.getContent().get(2).getSma20()); // (100+110+120)/3
     }
 
     private Stock createStock(Company comp, LocalDate date, String closePrice) {

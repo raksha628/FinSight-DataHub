@@ -61,7 +61,7 @@ class DashboardServiceImplTest {
                 .thenReturn(new PageImpl<>(Collections.emptyList()));
 
         when(analyticsService.getAveragePriceBySector(any())).thenReturn(Collections.emptyList());
-        when(uploadService.getUploadHistory()).thenReturn(Collections.emptyList());
+        when(uploadService.getUploadHistory(any())).thenReturn(new PageImpl<>(Collections.emptyList()));
 
         DashboardOverviewDto overview = dashboardService.getDashboardOverview();
 

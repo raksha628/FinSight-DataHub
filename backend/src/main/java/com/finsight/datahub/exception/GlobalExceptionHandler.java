@@ -139,7 +139,24 @@ public class GlobalExceptionHandler {
                 "File size exceeds the maximum allowed limit of 50MB.", request);
     }
 
+    // ── Database Integrity/Constraint Violation Exceptions ─────────────────
+
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(
+            org.springframework.dao.DataIntegrityViolationException ex, HttpServletRequest request) {
+        log.warn("Database integrity violation for URI: {} — {}", request.getRequestURI(), ex.getMessage());
+        String detail = ex.getRootCause() != null ? ex.getRootCause().getMessage() : ex.getMessage();
+        return buildResponse(HttpStatus.BAD_REQUEST, "Database constraint violation: " + detail, request);
+    }
+
     // ── Catch-All ─────────────────────────────────────────────────────────
+
+    @ExceptionHandler(com.finsight.datahub.exception.ExternalApiException.class)
+    public ResponseEntity<ErrorResponse> handleExternalApiException(
+            com.finsight.datahub.exception.ExternalApiException ex, HttpServletRequest request) {
+        log.error("External API failure at URI: {} — {}", request.getRequestURI(), ex.getMessage(), ex);
+        return buildResponse(HttpStatus.BAD_GATEWAY, ex.getMessage(), request);
+    }
 
     /**
      * Fallback handler for any unhandled exception.

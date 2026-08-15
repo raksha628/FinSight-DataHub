@@ -105,7 +105,7 @@ public class EtfEtlStrategy implements EtlStrategy {
                     if (categoryStr != null) etf.setCategory(categoryStr);
                     etf.setUpload(uploadHistory);
 
-                    etfRepository.save(etf);
+                    etfRepository.saveAndFlush(etf);
                     result.incrementAccepted();
 
                 } catch (DateTimeParseException dtpe) {

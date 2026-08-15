@@ -116,7 +116,7 @@ public class ForexEtlStrategy implements EtlStrategy {
                     fx.setDailyChange(dailyChange);
                     fx.setUpload(uploadHistory);
 
-                    forexRepository.save(fx);
+                    forexRepository.saveAndFlush(fx);
                     result.incrementAccepted();
 
                 } catch (DateTimeParseException dtpe) {

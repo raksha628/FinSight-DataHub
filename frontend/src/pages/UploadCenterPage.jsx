@@ -59,9 +59,9 @@ const UploadCenterPage = () => {
   const fetchUploadHistory = async () => {
     setLoading(true);
     try {
-      const res = await uploadService.getUploadHistory();
+      const res = await uploadService.getUploadHistory({ page: 0, size: 50 });
       if (res && res.success) {
-        setHistory(res.data || []);
+        setHistory(res.data.content || []);
       }
     } catch (err) {
       console.error('Failed to fetch upload history', err);
