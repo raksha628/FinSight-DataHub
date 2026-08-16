@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import MainLayout from '../components/Layout/MainLayout';
+import api from '../services/api';
 import {
   Grid,
   Card,
@@ -42,12 +43,64 @@ const REPORTS = [
 const ReportsPage = () => {
   const [downloadMsg, setDownloadMsg] = useState(null);
 
-  const handleDownload = (reportTitle, format) => {
+  const handleDownload = async (reportTitle, format) => {
     setDownloadMsg({
-      type: 'success',
-      text: `Generating ${format.toUpperCase()} report for "${reportTitle}"... Download starting.`,
+      type: 'info',
+      text: `Generating ${format.toUpperCase()} report for "${reportTitle}"...`,
     });
-    setTimeout(() => setDownloadMsg(null), 4000);
+
+    let endpoint = '';
+    let filename = '';
+
+    if (reportTitle === 'Sector Performance Analytics Report') {
+      endpoint = '/reports/export/sector-performance';
+      filename = `sector_performance_report.${format === 'excel' ? 'csv' : format}`;
+    } else if (reportTitle === 'Top Gainers & Losers Daily Audit') {
+      endpoint = '/reports/export/gainers-losers';
+      filename = `gainers_losers_report.${format === 'excel' ? 'csv' : format}`;
+    } else if (reportTitle === 'Technical Moving Average Summary') {
+      endpoint = '/reports/export/moving-averages';
+      filename = `moving_averages_report.${format === 'excel' ? 'csv' : format}`;
+    } else if (reportTitle === 'ETL Ingestion Audit Log') {
+      endpoint = '/reports/export/etl-audit';
+      filename = `etl_audit_log.${format === 'excel' ? 'csv' : format}`;
+    }
+
+    if (!endpoint) {
+      setDownloadMsg({ type: 'error', text: 'Unknown report selection.' });
+      return;
+    }
+
+    try {
+      const apiFormat = format === 'excel' ? 'csv' : format;
+      const response = await api.get(endpoint, {
+        params: { format: apiFormat },
+        responseType: 'blob',
+      });
+
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      setDownloadMsg({
+        type: 'success',
+        text: `${format.toUpperCase()} report downloaded successfully.`,
+      });
+      setTimeout(() => setDownloadMsg(null), 3000);
+    } catch (err) {
+      console.error('Failed to download report', err);
+      setDownloadMsg({
+        type: 'error',
+        text: 'Failed to download report. Make sure backend is running.',
+      });
+      setTimeout(() => setDownloadMsg(null), 4000);
+    }
   };
 
   return (

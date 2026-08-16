@@ -22,6 +22,18 @@ class SqlValidatorTest {
     }
 
     @Test
+    void testValidAscQueryPasses() {
+        String validSql = "SELECT c.symbol, c.name, s.close_price FROM stocks s JOIN companies c ON s.company_id = c.id ORDER BY s.daily_return ASC LIMIT 5;";
+        assertDoesNotThrow(() -> sqlValidator.validate(validSql));
+    }
+
+    @Test
+    void testValidDescQueryWithWherePasses() {
+        String validSql = "SELECT c.symbol, c.name, s.close_price FROM stocks s JOIN companies c ON s.company_id = c.id WHERE LOWER(c.sector) LIKE '%technology%' ORDER BY s.daily_return DESC LIMIT 5;";
+        assertDoesNotThrow(() -> sqlValidator.validate(validSql));
+    }
+
+    @Test
     void testRejectDropTableQuery() {
         String dropSql = "DROP TABLE users;";
         BadRequestException ex = assertThrows(BadRequestException.class, () -> sqlValidator.validate(dropSql));
