@@ -6,8 +6,5 @@ package com.finsight.datahub.entity;
 public enum AssetType {
     STOCK,
     ETF,
-    MUTUAL_FUND,
-    CRYPTO,
-    FOREX,
-    SECTOR_PERFORMANCE
+    MUTUAL_FUND
 }

@@ -1,19 +1,18 @@
 # FinSight DataHub
 
-AI-Powered Financial Data Warehouse & Market Analytics Platform
+A Spring Boot-based financial data ingestion and analytics platform with JWT authentication, PostgreSQL persistence, and a React dashboard.
 
 ## Features
 
-- Enterprise Spring Boot Architecture
-- Secure JWT Authentication
-- Automated CSV ETL Pipeline
-- Financial Analytics Dashboard
-- Redis Caching
-- AI Financial Copilot
-- Natural Language → SQL
-- AI Market Summaries
-- PDF & Excel Reports
-- Dockerized Deployment
+- **Enterprise Spring Boot Architecture** — Thin controller layer, robust service layer, and type-safe data access with Spring Data JPA.
+- **Secure JWT Authentication** — Stateless access control with Spring Security and JSON Web Tokens.
+- **CSV ETL Ingestion Pipeline** — Streams and ingests financial records directly via a multipart POST request.
+- **Strategy Pattern** — Open-Closed Principle applied to parse, validate, and clean different financial asset types (Stocks, ETFs, Mutual Funds).
+- **Relational Analytics Database** — PostgreSQL with foreign keys, constraints, and custom indexes designed to optimize query latency.
+- **Financial Analytics Engine** — On-the-fly calculations for top gainers, top losers, moving averages (SMA-20, SMA-50), volume analysis, and sector performance.
+- **React Bloomberg-style Dashboard** — Rich, dark-theme UI using Material UI (MUI) and Recharts for data visualization.
+- **Dockerized Environment** — Orchestrated deployment via Docker Compose.
+
 ---
 
 ## 🚀 Quick Start
@@ -29,7 +28,7 @@ AI-Powered Financial Data Warehouse & Market Analytics Platform
 git clone https://github.com/yourusername/finsight-datahub.git
 cd finsight-datahub
 cp .env.example .env
-# Edit .env — add your Gemini API key and strong JWT secret
+# Edit .env — add your strong JWT secret
 ```
 
 ### 2. Start with Docker Compose (Recommended)
@@ -40,7 +39,7 @@ npm install
 npm run build
 cd ..
 
-# Start all services (PostgreSQL + Redis + Spring Boot)
+# Start all services (PostgreSQL + Spring Boot backend)
 docker-compose up -d --build
 
 # Application runs at: http://localhost:8080
@@ -67,7 +66,7 @@ npm run dev
 | Role    | Username | Password    | Access Level |
 |---------|----------|-------------|--------------|
 | Admin   | `admin`  | `Admin@123` | Full access  |
-| Analyst | `analyst`| `Analyst@123`| Upload + AI |
+| Analyst | `analyst`| `Analyst@123`| Upload CSVs  |
 
 ---
 
@@ -77,7 +76,7 @@ npm run dev
 FinSight-DataHub/
 ├── backend/                    # Spring Boot 3 application
 │   ├── src/main/java/com/finsight/datahub/
-│   │   ├── config/             # SecurityConfig, RedisConfig, SwaggerConfig, WebConfig
+│   │   ├── config/             # SecurityConfig, SwaggerConfig, WebConfig
 │   │   ├── controller/         # REST controllers (thin layer)
 │   │   ├── service/            # Business logic interfaces
 │   │   │   └── impl/           # Service implementations
@@ -90,15 +89,13 @@ FinSight-DataHub/
 │   │   ├── security/           # JWT filter, UserDetails, auth entry point
 │   │   ├── etl/                # CSV ETL pipeline
 │   │   │   └── strategy/       # Per-asset ETL strategies
-│   │   ├── ai/                 # Gemini AI integration
-│   │   ├── scheduler/          # Folder watcher + cache refresh
 │   │   ├── exception/          # Global exception handling
 │   │   └── util/               # Date, file, price utilities
 │   ├── src/main/resources/
 │   │   ├── application.yml     # Master configuration
 │   │   ├── application-dev.yml
 │   │   ├── application-prod.yml
-│   │   └── db/migration/       # Flyway SQL migrations (V1–V9)
+│   │   └── db/migration/       # Flyway SQL migrations (V1–V7)
 │   └── Dockerfile
 │
 ├── frontend/                   # React + Vite dashboard
@@ -110,13 +107,12 @@ FinSight-DataHub/
 │       └── theme/              # MUI dark theme
 │
 ├── data/
-│   ├── incoming/               # Drop CSVs here for auto-processing
-│   ├── archive/                # Successfully processed files
-│   ├── error/                  # Failed files + validation reports
 │   └── samples/                # Sample CSV files
-│       └── stocks_sample.csv   # 50 US stocks (AAPL, MSFT, NVDA, ...)
+│       ├── stocks_sample.csv   
+│       ├── etf_sample.csv
+│       └── mutual_funds_sample.csv
 │
-├── docker-compose.yml          # PostgreSQL + Redis + Spring Boot
+├── docker-compose.yml          # PostgreSQL + Spring Boot
 ├── .env.example                # Environment variables template
 └── README.md
 ```
@@ -129,18 +125,17 @@ FinSight-DataHub/
 Browser → Spring Boot (port 8080)
               ├── Serves React SPA (GET /**)
               ├── REST API (GET/POST /api/**)
-              ├── ETL Pipeline (Scheduled)
-              └── AI Service (Gemini)
-                      │              │
-                 PostgreSQL        Redis
+              └── ETL Pipeline (Manual upload)
+                       │
+                  PostgreSQL
 ```
 
 **Key Design Decisions:**
-- **Single JAR deployment** — React build bundled into `classpath:/static/`
-- **Stateless JWT** — No server-side sessions; token contains userId, role
-- **Strategy Pattern** — Separate ETL strategy per asset type (Stock, ETF, Crypto...)
-- **Repository layer** — Never write SQL in controllers or services; use JPQL/JPA
-- **Cache-Aside** — Redis checked before every expensive analytics query
+- **Single JAR deployment** — React build bundled into `classpath:/static/` during compilation.
+- **Stateless JWT** — No server-side sessions; the JWT contains the username and role, validated at the filter layer.
+- **Strategy Pattern** — Separate ETL strategy per asset type (Stock, ETF, Mutual Fund), adhering to the Open/Closed Principle.
+- **Repository layer** — Clean separation of concerns using Spring Data JPA.
+- **Database constraints** — Leverages PostgreSQL indexes, unique constraints, and foreign keys to prevent corrupt or duplicate pricing records.
 
 ---
 
@@ -153,27 +148,29 @@ Browser → Spring Boot (port 8080)
 | POST | `/api/auth/login` | Public | Login → JWT token |
 | GET | `/api/auth/me` | Authenticated | Current user profile |
 
-### Upload
+### Upload (ETL)
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
 | POST | `/api/upload` | ANALYST+ | Upload CSV file |
-| GET | `/api/upload/history` | Authenticated | Upload history |
+| GET | `/api/upload/history` | Authenticated | Ingestion run audit history |
 
 ### Analytics
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| GET | `/api/analytics/top-gainers` | Authenticated | Top gaining stocks |
-| GET | `/api/analytics/top-losers` | Authenticated | Top losing stocks |
-| GET | `/api/analytics/sector` | Authenticated | Sector performance |
-| GET | `/api/analytics/moving-average` | Authenticated | SMA calculations |
+| GET | `/api/analytics/top-gainers` | Authenticated | Daily top gaining stocks |
+| GET | `/api/analytics/top-losers` | Authenticated | Daily top losing stocks |
+| GET | `/api/analytics/sector` | Authenticated | Sector average close prices |
+| GET | `/api/analytics/moving-average` | Authenticated | SMA calculations (SMA-20, SMA-50) |
 
-### AI
+### Report Exports
 | Method | Endpoint | Access | Description |
 |--------|----------|--------|-------------|
-| POST | `/api/ai/query` | ANALYST+ | Natural language → SQL |
-| POST | `/api/ai/market-summary` | Authenticated | AI market summary |
+| GET | `/api/reports/export/sector-performance` | Authenticated | Export sector performance CSV |
+| GET | `/api/reports/export/gainers-losers` | Authenticated | Export gainers/losers CSV |
+| GET | `/api/reports/export/moving-averages` | Authenticated | Export technical averages CSV |
+| GET | `/api/reports/export/etl-audit` | Authenticated | Export ETL audit logs CSV |
 
-Full documentation: `http://localhost:8080/swagger-ui`
+Full Swagger documentation is available at: `http://localhost:8080/swagger-ui`
 
 ---
 
@@ -181,72 +178,25 @@ Full documentation: `http://localhost:8080/swagger-ui`
 
 | Layer | Technology |
 |-------|-----------|
-| Backend | Java 21, Spring Boot 3.3, Spring Security, Spring Data JPA |
-| Database | PostgreSQL 15 (Flyway migrations, window functions, indexes) |
-| Cache | Redis 7 (Spring Cache, per-TTL configuration) |
-| Auth | JWT (JJWT 0.12.x), BCrypt strength 12 |
-| Frontend | React 18, Vite, MUI v5, Recharts, Axios |
-| AI | Google Gemini API (NL→SQL, Market Summaries) |
-| Reports | Apache POI (Excel), OpenPDF (PDF) |
-| Deployment | Docker, Docker Compose, AWS EC2 ready |
+| **Backend** | Java 21, Spring Boot 3.3, Spring Security, Spring Data JPA |
+| **Database** | PostgreSQL 15 (Flyway migrations, constraints, indexes) |
+| **Auth** | JWT (JJWT 0.12.x), BCrypt strength 12 password hashing |
+| **Frontend** | React 18, Vite, MUI v5, Recharts, Axios |
+| **ETL File Ingestion** | Apache Commons CSV |
+| **Deployment** | Docker, Docker Compose |
 
 ---
 
-## 🗓️ Development Roadmap
-
-| Module | Status |
-|--------|--------|
-| Foundation + Authentication | ✅ Complete |
-| ETL Pipeline + CSV Upload | ✅ Complete |
-| Analytics APIs + Redis Cache | ✅ Complete |
-| AI Module (Gemini) | ✅ Complete |
-| React Dashboard + Reports | ✅ Complete |
-| Testing + Docker + Polish | ✅ Complete |
-
----
-
-+-----------------------------------------------------------------+
-|                       REACT DASHBOARD UI                        |
-|        (Bloomberg Dark Theme • MUI • Vite • Recharts)           |
-+-----------------------------------------------------------------+
-                                 |
-                                 | REST / JWT Auth
-                                 v
-+-----------------------------------------------------------------+
-|                    SPRING BOOT APPLICATION                      |
-|                                                                 |
-|   +-----------------------+     +---------------------------+   |
-|   |     ETL ENGINE        |     |       AI INTELLIGENCE     |   |
-|   |  • Strategy Pattern   |     |  • Gemini API / NL2SQL    |   |
-|   |  • Folder Watcher     |     |  • JSQLParser AST Guard   |   |
-|   +-----------------------+     +---------------------------+   |
-|                                                                 |
-|   +---------------------------------------------------------+   |
-|   |                    ANALYTICS ENGINE                     |   |
-|   |        • Set-Based SQL • Zero In-Memory Iteration       |   |
-|   +---------------------------------------------------------+   |
-+-----------------------------------------------------------------+
-                                 |
-                                 | Flyway Migrations (V1–V9)
-                                 v
-+-----------------------------------------------------------------+
-|                     POSTGRESQL & REDIS                          |
-|         (Time-Series Storage • Aggregations • Caching)          |
-+-----------------------------------------------------------------+
-
-## 🎯 Key Engineering choices
+## 🎯 Key Engineering Choices
 
 **Why Spring Boot over other frameworks?**
-Convention over configuration, massive ecosystem, production-ready out of the box (actuator, security, data).
+Convention over configuration, robust built-in support for security, data modeling, and schedulers, and is the industry standard for enterprise application backends.
 
 **Why JWT over sessions?**
-Stateless — horizontal scaling without sticky sessions. Each token is self-contained with user ID and role.
+Statelessness. It allows the backend to be horizontally scalable since any node can independently verify the token cryptographically without looking up a session store.
 
 **Why Flyway?**
-Database migrations as code — version-controlled, reproducible, auditable. Critical for team environments and CI/CD.
-
-**Why Redis Cache-Aside?**
-Analytics queries on large datasets are expensive. Cache-aside gives us control: check Redis → miss → query DB → write to Redis → TTL evicts automatically.
+Database migrations as code. This ensures schema modifications are version-controlled, incremental, and fully reproducible across all local dev, test, and production database instances.
 
 **Why Strategy Pattern for ETL?**
-Stock CSV differs from Crypto CSV in column names and precision. Strategy pattern adds new asset types without modifying existing code (Open/Closed Principle).
+Each financial asset class has distinct CSV columns, data cleaning rules, and target tables. Using a strategy pattern allows registering new ingestion pipelines dynamically, meaning we can add support for a new asset type (e.g. bonds) without modifying the central upload controller.

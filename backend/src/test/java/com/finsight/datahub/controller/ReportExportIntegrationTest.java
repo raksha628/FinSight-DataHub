@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -50,22 +49,11 @@ class ReportExportIntegrationTest {
         SectorAvgPriceDto row = new SectorAvgPriceDto("Technology", new BigDecimal("150.00"), 1000L, 2L);
         when(analyticsService.getAveragePriceBySector(any())).thenReturn(List.of(row));
 
-        mockMvc.perform(get("/api/reports/export/sector-performance").param("format", "csv"))
+        mockMvc.perform(get("/api/reports/export/sector-performance"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "text/csv"))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"sector_performance_report.csv\""))
                 .andExpect(content().string("sector,avg_close_price,total_volume,company_count\nTechnology,150.00,1000,2\n"));
-    }
-
-    @Test
-    void testExportSectorPerformancePdf() throws Exception {
-        SectorAvgPriceDto row = new SectorAvgPriceDto("Technology", new BigDecimal("150.00"), 1000L, 2L);
-        when(analyticsService.getAveragePriceBySector(any())).thenReturn(List.of(row));
-
-        mockMvc.perform(get("/api/reports/export/sector-performance").param("format", "pdf"))
-                .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "application/pdf"))
-                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"sector_performance_report.pdf\""));
     }
 
     @Test
@@ -81,24 +69,11 @@ class ReportExportIntegrationTest {
         when(analyticsService.getTopLosers(any(), any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(Collections.emptyList()));
 
-        mockMvc.perform(get("/api/reports/export/gainers-losers").param("format", "csv"))
+        mockMvc.perform(get("/api/reports/export/gainers-losers"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "text/csv"))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"gainers_losers_report.csv\""))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("GAINER,AAPL,Apple Inc.,Technology,2026-08-15,180.0,185.0,179.0,184.0,50000,0.022\n")));
-    }
-
-    @Test
-    void testExportGainersLosersPdf() throws Exception {
-        when(analyticsService.getTopGainers(any(), any(), any(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(Collections.emptyList()));
-        when(analyticsService.getTopLosers(any(), any(), any(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(Collections.emptyList()));
-
-        mockMvc.perform(get("/api/reports/export/gainers-losers").param("format", "pdf"))
-                .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "application/pdf"))
-                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"gainers_losers_report.pdf\""));
     }
 
     @Test
@@ -107,22 +82,11 @@ class ReportExportIntegrationTest {
         when(analyticsService.getMovingAverages(any(), any(), any(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(ma)));
 
-        mockMvc.perform(get("/api/reports/export/moving-averages").param("format", "csv"))
+        mockMvc.perform(get("/api/reports/export/moving-averages"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "text/csv"))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"moving_averages_report.csv\""))
                 .andExpect(content().string("symbol,company_name,trade_date,close_price,sma_20,sma_50\nAAPL,Apple Inc.,2026-08-15,184.0,182.0,180.0\n"));
-    }
-
-    @Test
-    void testExportMovingAveragesPdf() throws Exception {
-        when(analyticsService.getMovingAverages(any(), any(), any(), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(Collections.emptyList()));
-
-        mockMvc.perform(get("/api/reports/export/moving-averages").param("format", "pdf"))
-                .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "application/pdf"))
-                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"moving_averages_report.pdf\""));
     }
 
     @Test
@@ -142,21 +106,10 @@ class ReportExportIntegrationTest {
         when(uploadService.getUploadHistory(any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(dto)));
 
-        mockMvc.perform(get("/api/reports/export/etl-audit").param("format", "csv"))
+        mockMvc.perform(get("/api/reports/export/etl-audit"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "text/csv"))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"etl_audit_log.csv\""))
                 .andExpect(content().string("id,original_filename,asset_type,status,total_rows,accepted_rows,rejected_rows,file_size_bytes,uploaded_at,processing_ms\n1,test.csv,STOCK,SUCCESS,10,10,0,100,2026-08-15T10:00,120\n"));
-    }
-
-    @Test
-    void testExportEtlAuditPdf() throws Exception {
-        when(uploadService.getUploadHistory(any(Pageable.class)))
-                .thenReturn(new PageImpl<>(Collections.emptyList()));
-
-        mockMvc.perform(get("/api/reports/export/etl-audit").param("format", "pdf"))
-                .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.CONTENT_TYPE, "application/pdf"))
-                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"etl_audit_log.pdf\""));
     }
 }

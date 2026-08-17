@@ -17,7 +17,7 @@ import com.finsight.datahub.repository.UploadHistoryRepository;
 import com.finsight.datahub.service.UploadService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.cache.annotation.CacheEvict;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -47,7 +47,6 @@ public class UploadServiceImpl implements UploadService {
     }
 
     @Override
-    @CacheEvict(cacheNames = {"analytics", "sector", "stocks"}, allEntries = true)
     public UploadResponseDto uploadCsv(MultipartFile file, AssetType assetType, User user) {
         if (file == null || file.isEmpty()) {
             throw new BadRequestException("Uploaded CSV file cannot be empty");
@@ -68,7 +67,6 @@ public class UploadServiceImpl implements UploadService {
 
     @Override
     @Transactional
-    @CacheEvict(cacheNames = {"analytics", "sector", "stocks"}, allEntries = true)
     public UploadResponseDto uploadFileStream(InputStream inputStream, String originalFilename, long fileSizeBytes, AssetType assetType, User user) {
         if (assetType == null) {
             throw new BadRequestException("AssetType must be specified");

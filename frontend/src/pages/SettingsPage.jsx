@@ -100,19 +100,7 @@ const SettingsPage = () => {
                   }
                 />
 
-                <FormControlLabel
-                  control={<Switch defaultChecked color="primary" />}
-                  label={
-                    <Box>
-                      <Typography variant="body2" sx={{ color: '#F8FAFC', fontWeight: 600 }}>
-                        Automated Folder Watcher Alerts
-                      </Typography>
-                      <Typography variant="caption" sx={{ color: '#64748B' }}>
-                        Notify when new CSV files are ingested from data/incoming
-                      </Typography>
-                    </Box>
-                  }
-                />
+
 
                 <FormControlLabel
                   control={<Switch defaultChecked color="primary" />}

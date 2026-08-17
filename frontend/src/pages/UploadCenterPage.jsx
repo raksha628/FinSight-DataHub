@@ -35,9 +35,6 @@ const ASSET_TYPES = [
   { value: 'STOCK', label: 'Stocks (US Equities OHLCV)' },
   { value: 'ETF', label: 'Exchange Traded Funds (NAV & AUM)' },
   { value: 'MUTUAL_FUND', label: 'Mutual Funds (Scheme NAV)' },
-  { value: 'CRYPTO', label: 'Cryptocurrency Market Data' },
-  { value: 'FOREX', label: 'Forex Currency Pairs' },
-  { value: 'SECTOR_PERFORMANCE', label: 'Sector Performance Data' },
 ];
 
 const UploadCenterPage = () => {

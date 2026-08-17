@@ -18,15 +18,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 import org.mockito.Mockito;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
@@ -37,7 +34,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(
-    classes = {FinSightDataHubApplication.class, UploadServiceIntegrationTest.TestConfig.class},
+    classes = {FinSightDataHubApplication.class},
     properties = {
         "spring.datasource.url=jdbc:h2:mem:testdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
         "spring.datasource.driver-class-name=org.h2.Driver",
@@ -47,26 +44,11 @@ import static org.junit.jupiter.api.Assertions.*;
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.flyway.enabled=false",
-        "spring.cache.type=simple",
-        "spring.main.allow-bean-definition-overriding=true",
-        "app.etl.incoming-dir=src/test/resources/incoming-nonexistent",
-        "app.etl.poll-rate-ms=99999999"
+        "spring.main.allow-bean-definition-overriding=true"
     }
 )
-@EnableAutoConfiguration(exclude = {
-    RedisAutoConfiguration.class,
-    RedisRepositoriesAutoConfiguration.class
-})
+@EnableAutoConfiguration
 class UploadServiceIntegrationTest {
-
-    @org.springframework.boot.test.context.TestConfiguration
-    static class TestConfig {
-        @org.springframework.context.annotation.Bean
-        @org.springframework.context.annotation.Primary
-        public org.springframework.cache.CacheManager cacheManager() {
-            return new org.springframework.cache.concurrent.ConcurrentMapCacheManager("analytics", "sector", "stocks");
-        }
-    }
 
     @Autowired
     private UploadService uploadService;
@@ -83,25 +65,10 @@ class UploadServiceIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private org.springframework.cache.CacheManager cacheManager;
-
-    @MockBean
-    private RedisConnectionFactory redisConnectionFactory;
-
     private User testUser;
 
     @BeforeEach
     void setUp() {
-        if (cacheManager != null) {
-            for (String name : cacheManager.getCacheNames()) {
-                org.springframework.cache.Cache cache = cacheManager.getCache(name);
-                if (cache != null) {
-                    cache.clear();
-                }
-            }
-        }
-
         stockRepository.deleteAll();
         uploadHistoryRepository.deleteAll();
         companyRepository.deleteAll();

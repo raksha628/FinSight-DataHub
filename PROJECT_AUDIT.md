@@ -1,6 +1,5 @@
 # FinSight DataHub — Final Project Audit & Health Assessment
 
-> **Date of Audit**: August 6, 2026  
 > **Status**: Production Ready & Portfolio Certified  
 > **Version**: 1.0.0
 
@@ -10,14 +9,12 @@
 
 | Module | Requirements | Status | Notes |
 |---|---|---|---|
-| **Foundation & Auth** | Spring Security, JWT, BCrypt, Flyway V1-V9 | ✅ 100% | Stateless JWT, 3 Roles (ADMIN, ANALYST, VIEWER) |
-| **ETL Pipeline** | Multi-asset Strategy Pattern, CSV parsing, audit log | ✅ 100% | Supports Stocks, ETFs, Mutual Funds, Crypto, Forex, Sector |
-| **Folder Watcher** | Scheduled folder scanner (`data/incoming/`) | ✅ 100% | Automatically archives or error-routes processed files |
-| **Analytics Engine** | Set-based SQL aggregations, SMA-20/50, returns | ✅ 100% | Zero in-memory iteration, N+1 query free |
-| **Dashboard Backend** | Executive summary, sector breakdown, top metrics | ✅ 100% | `GET /api/dashboard/overview` |
-| **React Dashboard UI** | Bloomberg Dark Mode theme, MUI, Recharts | ✅ 100% | 7 pages, loading skeletons, error boundaries |
-| **AI Intelligence** | NL2SQL, Gemini API, AST security, Brief, Explain | ✅ 100% | AST JSQLParser validator, 5s timeout safeguard |
-| **Testing Suite** | Unit tests across service, controller, and security | ✅ 100% | 9/9 unit tests passing (`BUILD SUCCESS`) |
+| **Foundation & Auth** | Spring Security, JWT, BCrypt, Flyway V1-V7 | ✅ 100% | Stateless JWT, Roles (ADMIN, ANALYST, VIEWER) |
+| **ETL Ingestion Pipeline** | Multi-asset Strategy Pattern, CSV parsing, audit logs | ✅ 100% | Strategy pattern for Stocks, ETFs, Mutual Funds |
+| **Analytics Engine** | Set-based SQL aggregations, SMA-20/50, returns | ✅ 100% | Zero in-memory iteration, N+1 query free database design |
+| **Dashboard Backend** | Executive summary, sector breakdown, top metrics | ✅ 100% | Served from `GET /api/dashboard/overview` |
+| **React Dashboard UI** | Bloomberg Dark Mode theme, MUI, Recharts | ✅ 100% | 6 pages, loading skeletons, responsive grid layouts |
+| **Testing Suite** | Unit & Integration tests for services and controllers | ✅ 100% | Ingestion and calculation tests passing successfully |
 | **Documentation** | Master README, Interview Guide, Swagger OpenAPI | ✅ 100% | Complete interview talking points and diagrams |
 
 ---
@@ -25,13 +22,13 @@
 ## ⚡ 2. Health & Performance Audit
 
 ### Compilation & Build Assessment
-- **Java Compiler**: 85 source files compiled with 0 compilation errors (`javac 21`).
-- **Frontend Vite**: 1,828 modules transformed in `30.39s` into `classpath:/static/`.
-- **Automated Tests**: 9 test cases covering `SqlValidator`, `StockEtlStrategy`, `AnalyticsServiceImpl`, `UploadServiceImpl`, `DashboardServiceImpl`, `AiServiceImpl`, and `AnalyticsController` passed with 0 failures.
+- **Java Compiler**: Source files compiled with 0 compilation errors (`javac 21`).
+- **Frontend Vite**: Static React assets bundled directly into the backend target folder (`classpath:/static/`).
+- **Automated Tests**: Unit and integration test suite passing cleanly with 0 failures.
 
 ### Security Audit Summary
-- **AST SQL Security (`SqlValidator`)**: Neutralizes SQL Injection by parsing query ASTs with `JSQLParser`. Tested against comment injection, table spoofing, multi-statement injection, and `DROP`/`DELETE`/`UPDATE` attempts.
-- **Stateless Auth**: Passwords hashed with BCrypt (strength 12). JWT tokens signed with HMAC-SHA256. Zero hardcoded secrets in version control.
+- **Stateless Auth**: User passwords hashed using BCrypt with a cost factor of 12. JWT tokens signed cryptographically using HMAC-SHA256. Zero hardcoded secrets in version control.
+- **Data Access Layer**: All database interactions use Spring Data JPA or pre-defined queries, preventing SQL injection vulnerabilities.
 
 ---
 
@@ -39,7 +36,7 @@
 
 - [x] Spring Boot application builds cleanly into a single executable JAR.
 - [x] React frontend is bundled in `classpath:/static/` and served automatically.
-- [x] Docker Compose starts PostgreSQL, Redis, and Spring Boot with one command (`docker-compose up`).
+- [x] Docker Compose starts PostgreSQL and Spring Boot with one command (`docker-compose up`).
 - [x] `INTERVIEW_GUIDE.md` is available for candidate preparation.
 - [x] Sample CSV datasets are placed in `data/samples/`.
 
@@ -47,6 +44,6 @@
 
 ## 💡 Recommendations for Interview Presentation
 
-1. **Highlight the Strategy Pattern in ETL**: Emphasize how `EtlStrategy` adheres to the Open/Closed Principle when extending new asset classes.
-2. **Explain AST SQL Validation**: Pitch the `JSQLParser` AST validator as a real-world enterprise defense against LLM prompt injection and unauthorized database execution.
-3. **Discuss SQL vs In-Memory Performance**: Mention how pushing aggregations to PostgreSQL avoids JVM heap memory pressure and GC pauses.
+1. **Highlight the Strategy Pattern in ETL**: Emphasize how `EtlStrategy` adheres to the Open/Closed Principle when extending support for new asset classes (Open for extension, Closed for modification).
+2. **Defend the Choice of Stateless JWT**: Explain the scalability advantages of JWT over stateful session cookies (avoiding sticky-session configuration or session-replication caches).
+3. **Discuss SQL vs In-Memory Performance**: Demonstrate how executing moving averages directly in PostgreSQL prevents loading millions of historical rows into JVM heap memory.

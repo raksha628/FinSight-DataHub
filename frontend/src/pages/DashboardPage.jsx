@@ -44,21 +44,15 @@ import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import EqualizerIcon from '@mui/icons-material/Equalizer';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
-import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
+
 
 const COLORS = ['#06B6D4', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899'];
 
 const DashboardPage = () => {
   const [overview, setOverview] = useState(null);
   const [gainers, setGainers] = useState([]);
-  const [insights, setInsights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  // AI Chart Narrative Explanations
-  const [sectorExplanation, setSectorExplanation] = useState('');
-  const [explainLoading, setExplainLoading] = useState(false);
 
   useEffect(() => {
     fetchDashboardData();
@@ -68,15 +62,13 @@ const DashboardPage = () => {
     setLoading(true);
     setError('');
     try {
-      const [overviewRes, gainersRes, insightsRes] = await Promise.all([
+      const [overviewRes, gainersRes] = await Promise.all([
         dashboardService.getOverview(),
         analyticsService.getTopGainers({ size: 7 }),
-        api.get('/ai/executive-insights'),
       ]);
 
       if (overviewRes.success) setOverview(overviewRes.data);
       if (gainersRes.success) setGainers(gainersRes.data.content || []);
-      if (insightsRes.data && insightsRes.data.success) setInsights(insightsRes.data.data || []);
     } catch (err) {
       console.error('Failed to load dashboard', err);
       setError('Could not connect to backend server. Make sure Spring Boot is running.');
@@ -85,23 +77,7 @@ const DashboardPage = () => {
     }
   };
 
-  const handleExplainChart = async (contextName, metricsData) => {
-    setExplainLoading(true);
-    try {
-      const res = await api.post('/ai/explain', {
-        contextName,
-        metrics: metricsData,
-      });
-      if (res.data && res.data.success) {
-        setSectorExplanation(res.data.data);
-      }
-    } catch (e) {
-      console.error('Failed to get chart explanation', e);
-      setSectorExplanation('Technology stocks outperformed every other sector today, largely driven by NVIDIA, Microsoft, and Apple. Trading volume increased significantly, suggesting strong institutional buying.');
-    } finally {
-      setExplainLoading(false);
-    }
-  };
+
 
   if (loading) {
     return (
@@ -182,31 +158,7 @@ const DashboardPage = () => {
         </Grid>
       </Grid>
 
-      {/* AI Executive Insights Callout */}
-      {insights.length > 0 && (
-        <Card sx={{ p: 2.5, mb: 3, background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(6, 182, 212, 0.15) 100%)', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.5 }}>
-            <SmartToyIcon sx={{ color: '#A78BFA' }} />
-            <Typography variant="h6" sx={{ color: '#F8FAFC', fontWeight: 700 }}>
-              AI Executive Insights
-            </Typography>
-          </Box>
-          <Grid container spacing={2}>
-            {insights.map((item, idx) => (
-              <Grid item xs={12} md={4} key={idx}>
-                <Box sx={{ p: 1.8, borderRadius: 2, bgcolor: 'rgba(17, 24, 39, 0.8)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <Typography variant="subtitle2" sx={{ color: '#38BDF8', fontWeight: 700, mb: 0.5 }}>
-                    {item.title}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#F8FAFC', fontSize: '0.85rem' }}>
-                    {item.insightText}
-                  </Typography>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
-        </Card>
-      )}
+
 
       {/* Visual Analytics Charts Section */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -217,23 +169,7 @@ const DashboardPage = () => {
               <Typography variant="h6" sx={{ color: '#F8FAFC', fontWeight: 700 }}>
                 Sector Portfolio Breakdown
               </Typography>
-              <Button
-                size="small"
-                startIcon={<AutoAwesomeIcon style={{ fontSize: 14 }} />}
-                onClick={() => handleExplainChart('Technology Sector', { topDrivers: ['NVDA', 'MSFT', 'AAPL'] })}
-                sx={{ fontSize: '0.72rem', color: '#06B6D4', border: '1px solid rgba(6,182,212,0.3)' }}
-              >
-                AI Explain
-              </Button>
             </Box>
-
-            <Collapse in={!!sectorExplanation}>
-              <Box sx={{ p: 1.5, mb: 2, borderRadius: 2, bgcolor: 'rgba(6, 182, 212, 0.1)', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
-                <Typography variant="body2" sx={{ color: '#38BDF8', fontSize: '0.825rem', lineHeight: 1.5 }}>
-                  🤖 <strong>AI Explanation:</strong> {sectorExplanation}
-                </Typography>
-              </Box>
-            </Collapse>
 
             <Box sx={{ height: 260, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {sectorData.length > 0 ? (

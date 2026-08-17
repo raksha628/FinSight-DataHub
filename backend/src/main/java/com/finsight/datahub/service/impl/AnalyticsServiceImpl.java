@@ -7,7 +7,7 @@ import com.finsight.datahub.dto.response.StockPerformanceDto;
 import com.finsight.datahub.entity.Stock;
 import com.finsight.datahub.repository.StockRepository;
 import com.finsight.datahub.service.AnalyticsService;
-import org.springframework.cache.annotation.Cacheable;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -32,7 +32,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    @Cacheable(value = "analytics", key = "{#date, #sector, #symbol, #pageable.pageNumber, #pageable.pageSize}")
     public Page<StockPerformanceDto> getTopGainers(LocalDate date, String sector, String symbol, Pageable pageable) {
         LocalDate queryDate = date != null ? date : stockRepository.findLatestTradeDate().orElse(null);
         Page<Stock> stocks = stockRepository.findTopGainers(queryDate, sector, symbol, pageable);
@@ -40,7 +39,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    @Cacheable(value = "analytics", key = "{#date, #sector, #symbol, #pageable.pageNumber, #pageable.pageSize}")
     public Page<StockPerformanceDto> getTopLosers(LocalDate date, String sector, String symbol, Pageable pageable) {
         LocalDate queryDate = date != null ? date : stockRepository.findLatestTradeDate().orElse(null);
         Page<Stock> stocks = stockRepository.findTopLosers(queryDate, sector, symbol, pageable);
@@ -48,7 +46,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    @Cacheable(value = "analytics", key = "{#date, #sector, #symbol, #pageable.pageNumber, #pageable.pageSize}")
     public Page<StockPerformanceDto> getHighestVolume(LocalDate date, String sector, String symbol, Pageable pageable) {
         LocalDate queryDate = date != null ? date : stockRepository.findLatestTradeDate().orElse(null);
         Page<Stock> stocks = stockRepository.findHighestVolume(queryDate, sector, symbol, pageable);
@@ -56,14 +53,12 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    @Cacheable(value = "sector", key = "#date")
     public List<SectorAvgPriceDto> getAveragePriceBySector(LocalDate date) {
         LocalDate queryDate = date != null ? date : stockRepository.findLatestTradeDate().orElse(null);
         return stockRepository.findSectorAveragePrices(queryDate);
     }
 
     @Override
-    @Cacheable(value = "analytics", key = "{'daily', #date, #sector, #symbol, #pageable.pageNumber, #pageable.pageSize}")
     public Page<PeriodReturnDto> getDailyReturns(LocalDate date, String sector, String symbol, Pageable pageable) {
         LocalDate queryDate = date != null ? date : stockRepository.findLatestTradeDate().orElse(null);
         Page<Stock> stocks = stockRepository.findTopGainers(queryDate, sector, symbol, pageable);
@@ -92,7 +87,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    @Cacheable(value = "analytics", key = "{'weekly', #startDate, #endDate, #sector, #symbol, #pageable.pageNumber, #pageable.pageSize}")
     public Page<PeriodReturnDto> getWeeklyReturns(LocalDate startDate, LocalDate endDate, String sector, String symbol, Pageable pageable) {
         LocalDate end = endDate != null ? endDate : LocalDate.now();
         LocalDate start = startDate != null ? startDate : end.minusWeeks(1);
@@ -100,7 +94,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    @Cacheable(value = "analytics", key = "{'monthly', #startDate, #endDate, #sector, #symbol, #pageable.pageNumber, #pageable.pageSize}")
     public Page<PeriodReturnDto> getMonthlyReturns(LocalDate startDate, LocalDate endDate, String sector, String symbol, Pageable pageable) {
         LocalDate end = endDate != null ? endDate : LocalDate.now();
         LocalDate start = startDate != null ? startDate : end.minusMonths(1);
@@ -108,7 +101,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    @Cacheable(value = "stocks", key = "{#symbol, #startDate, #endDate, #pageable.pageNumber, #pageable.pageSize}")
     public Page<MovingAverageDto> getMovingAverages(String symbol, LocalDate startDate, LocalDate endDate, Pageable pageable) {
         if (symbol == null || symbol.isBlank()) {
             symbol = "AAPL"; // Default fallback symbol
@@ -141,21 +133,18 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
-    @Cacheable(value = "analytics", key = "{'highest', #startDate, #endDate, #sector, #symbol, #pageable.pageNumber, #pageable.pageSize}")
     public Page<StockPerformanceDto> getHighestClosingPrice(LocalDate startDate, LocalDate endDate, String sector, String symbol, Pageable pageable) {
         Page<Stock> stocks = stockRepository.findHighestClosingPrice(startDate, endDate, sector, symbol, pageable);
         return stocks.map(this::mapToStockPerformanceDto);
     }
 
     @Override
-    @Cacheable(value = "analytics", key = "{'lowest', #startDate, #endDate, #sector, #symbol, #pageable.pageNumber, #pageable.pageSize}")
     public Page<StockPerformanceDto> getLowestClosingPrice(LocalDate startDate, LocalDate endDate, String sector, String symbol, Pageable pageable) {
         Page<Stock> stocks = stockRepository.findLowestClosingPrice(startDate, endDate, sector, symbol, pageable);
         return stocks.map(this::mapToStockPerformanceDto);
     }
 
     @Override
-    @Cacheable(value = "analytics", key = "{'active', #date, #sector, #symbol, #pageable.pageNumber, #pageable.pageSize}")
     public Page<StockPerformanceDto> getMostActiveStocks(LocalDate date, String sector, String symbol, Pageable pageable) {
         LocalDate queryDate = date != null ? date : stockRepository.findLatestTradeDate().orElse(null);
         Page<Stock> stocks = stockRepository.findHighestVolume(queryDate, sector, symbol, pageable);

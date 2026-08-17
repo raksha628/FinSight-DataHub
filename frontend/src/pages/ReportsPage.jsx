@@ -12,8 +12,6 @@ import {
   Alert,
   Divider,
 } from '@mui/material';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import TableViewIcon from '@mui/icons-material/TableView';
 import DownloadIcon from '@mui/icons-material/Download';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 
@@ -43,10 +41,10 @@ const REPORTS = [
 const ReportsPage = () => {
   const [downloadMsg, setDownloadMsg] = useState(null);
 
-  const handleDownload = async (reportTitle, format) => {
+  const handleDownload = async (reportTitle) => {
     setDownloadMsg({
       type: 'info',
-      text: `Generating ${format.toUpperCase()} report for "${reportTitle}"...`,
+      text: `Generating CSV report for "${reportTitle}"...`,
     });
 
     let endpoint = '';
@@ -54,16 +52,16 @@ const ReportsPage = () => {
 
     if (reportTitle === 'Sector Performance Analytics Report') {
       endpoint = '/reports/export/sector-performance';
-      filename = `sector_performance_report.${format === 'excel' ? 'csv' : format}`;
+      filename = 'sector_performance_report.csv';
     } else if (reportTitle === 'Top Gainers & Losers Daily Audit') {
       endpoint = '/reports/export/gainers-losers';
-      filename = `gainers_losers_report.${format === 'excel' ? 'csv' : format}`;
+      filename = 'gainers_losers_report.csv';
     } else if (reportTitle === 'Technical Moving Average Summary') {
       endpoint = '/reports/export/moving-averages';
-      filename = `moving_averages_report.${format === 'excel' ? 'csv' : format}`;
+      filename = 'moving_averages_report.csv';
     } else if (reportTitle === 'ETL Ingestion Audit Log') {
       endpoint = '/reports/export/etl-audit';
-      filename = `etl_audit_log.${format === 'excel' ? 'csv' : format}`;
+      filename = 'etl_audit_log.csv';
     }
 
     if (!endpoint) {
@@ -72,9 +70,7 @@ const ReportsPage = () => {
     }
 
     try {
-      const apiFormat = format === 'excel' ? 'csv' : format;
       const response = await api.get(endpoint, {
-        params: { format: apiFormat },
         responseType: 'blob',
       });
 
@@ -90,7 +86,7 @@ const ReportsPage = () => {
 
       setDownloadMsg({
         type: 'success',
-        text: `${format.toUpperCase()} report downloaded successfully.`,
+        text: 'CSV report downloaded successfully.',
       });
       setTimeout(() => setDownloadMsg(null), 3000);
     } catch (err) {
@@ -131,31 +127,13 @@ const ReportsPage = () => {
 
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
                   <Button
-                    variant="outlined"
-                    color="error"
-                    size="small"
-                    startIcon={<PictureAsPdfIcon />}
-                    onClick={() => handleDownload(report.title, 'pdf')}
-                  >
-                    PDF
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="success"
-                    size="small"
-                    startIcon={<TableViewIcon />}
-                    onClick={() => handleDownload(report.title, 'excel')}
-                  >
-                    Excel (.xlsx)
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="info"
+                    variant="contained"
+                    color="primary"
                     size="small"
                     startIcon={<DownloadIcon />}
-                    onClick={() => handleDownload(report.title, 'csv')}
+                    onClick={() => handleDownload(report.title)}
                   >
-                    CSV
+                    Download CSV
                   </Button>
                 </Box>
               </CardContent>

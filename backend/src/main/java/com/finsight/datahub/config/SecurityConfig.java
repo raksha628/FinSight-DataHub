@@ -77,9 +77,8 @@ public class SecurityConfig {
                     // Admin-only endpoints
                     .requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-                    // Upload and AI queries — ANALYST or ADMIN
+                    // Upload queries — ANALYST or ADMIN
                     .requestMatchers(HttpMethod.POST, "/api/upload/**").hasAnyRole("ANALYST", "ADMIN")
-                    .requestMatchers(HttpMethod.POST, "/api/ai/**").hasAnyRole("ANALYST", "ADMIN")
 
                     // All other /api/** requests require authentication
                     .requestMatchers("/api/**").authenticated()

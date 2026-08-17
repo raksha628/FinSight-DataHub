@@ -20,20 +20,11 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
-import org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.cache.CacheManager;
-import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.mock.web.MockMultipartFile;
 
 import java.math.BigDecimal;
@@ -49,7 +40,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest(
-    classes = {FinSightDataHubApplication.class, AnalyticsServiceIntegrationTest.TestConfig.class},
+    classes = {FinSightDataHubApplication.class},
     properties = {
         "spring.datasource.url=jdbc:h2:mem:analyticsdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE",
         "spring.datasource.driver-class-name=org.h2.Driver",
@@ -59,26 +50,11 @@ import static org.mockito.Mockito.verify;
         "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "spring.flyway.enabled=false",
-        "spring.cache.type=simple",
-        "spring.main.allow-bean-definition-overriding=true",
-        "app.etl.incoming-dir=src/test/resources/incoming-nonexistent",
-        "app.etl.poll-rate-ms=99999999"
+        "spring.main.allow-bean-definition-overriding=true"
     }
 )
-@EnableAutoConfiguration(exclude = {
-    RedisAutoConfiguration.class,
-    RedisRepositoriesAutoConfiguration.class
-})
+@EnableAutoConfiguration
 class AnalyticsServiceIntegrationTest {
-
-    @TestConfiguration
-    static class TestConfig {
-        @Bean
-        @Primary
-        public CacheManager cacheManager() {
-            return new ConcurrentMapCacheManager("analytics", "sector", "stocks");
-        }
-    }
 
     @Autowired
     private AnalyticsService analyticsService;
@@ -98,26 +74,11 @@ class AnalyticsServiceIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private org.springframework.cache.CacheManager cacheManager;
-
-    @MockBean
-    private RedisConnectionFactory redisConnectionFactory;
-
     private User testUser;
     private Company testCompany;
 
     @BeforeEach
     void setUp() {
-        if (cacheManager != null) {
-            for (String name : cacheManager.getCacheNames()) {
-                org.springframework.cache.Cache cache = cacheManager.getCache(name);
-                if (cache != null) {
-                    cache.clear();
-                }
-            }
-        }
-
         stockRepository.deleteAll();
         uploadHistoryRepository.deleteAll();
         companyRepository.deleteAll();
@@ -161,42 +122,6 @@ class AnalyticsServiceIntegrationTest {
         assertEquals(1, sectorAverages.size());
         assertEquals("Technology", sectorAverages.get(0).getSector());
         assertEquals(0, new BigDecimal("120.0000").compareTo(sectorAverages.get(0).getAvgClosePrice()));
-    }
-
-    @Test
-    void testCachingAndEviction() {
-        seedStock(testCompany, LocalDate.of(2026, 8, 13), "150.00", 1000L, "0.00");
-
-        Pageable pageable = PageRequest.of(0, 10);
-        LocalDate date = LocalDate.of(2026, 8, 13);
-
-        // Clear mock invocation logs
-        Mockito.clearInvocations(stockRepository);
-
-        // First call: Should miss cache and call stockRepository.findTopGainers
-        Page<StockPerformanceDto> res1 = analyticsService.getTopGainers(date, null, null, pageable);
-        assertNotNull(res1);
-        verify(stockRepository, times(1)).findTopGainers(eq(date), any(), any(), eq(pageable));
-
-        // Second call: Should hit cache and bypass stockRepository
-        Page<StockPerformanceDto> res2 = analyticsService.getTopGainers(date, null, null, pageable);
-        assertNotNull(res2);
-        verify(stockRepository, times(1)).findTopGainers(eq(date), any(), any(), eq(pageable));
-
-        // Now upload new CSV file: Should evict all caches (analytics, sector, stocks)
-        String csvData = "date,symbol,open,high,low,close,volume,adj_close\n" +
-                         "2026-08-14,AAPL,150.00,155.00,149.00,154.00,50000,154.00\n";
-        MockMultipartFile file = new MockMultipartFile(
-                "file", "stocks_new.csv", "text/csv",
-                csvData.getBytes(StandardCharsets.UTF_8)
-        );
-        UploadResponseDto uploadRes = uploadService.uploadCsv(file, AssetType.STOCK, testUser);
-        assertNotNull(uploadRes);
-
-        // Third call: Should miss cache (due to eviction) and hit stockRepository again
-        Page<StockPerformanceDto> res3 = analyticsService.getTopGainers(date, null, null, pageable);
-        assertNotNull(res3);
-        verify(stockRepository, times(2)).findTopGainers(eq(date), any(), any(), eq(pageable));
     }
 
     private void seedStock(Company company, LocalDate date, String closePrice, Long volume, String dailyReturn) {

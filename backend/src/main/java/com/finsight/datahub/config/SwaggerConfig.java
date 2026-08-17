@@ -64,15 +64,12 @@ public class SwaggerConfig {
                 .title("FinSight DataHub API")
                 .version("1.0.0")
                 .description("""
-                        ## FinSight DataHub — AI-Powered Financial Data Warehouse
+                        ## FinSight DataHub — Financial Data Ingestion and Analytics Platform
                         
                         Enterprise-grade financial analytics platform featuring:
                         - **JWT Authentication** with role-based access (ADMIN, ANALYST, VIEWER)
-                        - **CSV ETL Pipeline** for stocks, ETFs, crypto, forex, and mutual funds
+                        - **CSV ETL Pipeline** for stocks, ETFs, and mutual funds
                         - **Analytics APIs** for top gainers, movers, sector performance, moving averages
-                        - **AI Natural Language Queries** powered by Google Gemini
-                        - **Professional Reports** in PDF and Excel formats
-                        - **Redis Caching** for high-performance analytics
                         
                         ### Authentication
                         1. Register: `POST /api/auth/register`

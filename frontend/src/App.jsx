@@ -9,7 +9,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import MarketAnalyticsPage from './pages/MarketAnalyticsPage';
 import UploadCenterPage from './pages/UploadCenterPage';
-import AiAssistantPage from './pages/AiAssistantPage';
+
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 
@@ -49,14 +49,7 @@ function App() {
               }
             />
 
-            <Route
-              path="/ai-assistant"
-              element={
-                <ProtectedRoute>
-                  <AiAssistantPage />
-                </ProtectedRoute>
-              }
-            />
+
 
             <Route
               path="/reports"

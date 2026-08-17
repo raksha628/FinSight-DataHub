@@ -10,8 +10,8 @@ WORKDIR /app
 # Copy the pre-built application JAR
 COPY target/datahub-*.jar app.jar
 
-# Create data directories for ETL file pipeline & set non-root ownership
-RUN mkdir -p /app/data/incoming /app/data/archive /app/data/error /app/logs \
+# Create data directories & set non-root ownership
+RUN mkdir -p /app/logs \
     && addgroup -S finsight && adduser -S finsight -G finsight \
     && chown -R finsight:finsight /app
 

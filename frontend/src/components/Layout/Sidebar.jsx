@@ -15,7 +15,6 @@ import {
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ShowChartIcon from '@mui/icons-material/ShowChart';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import SettingsIcon from '@mui/icons-material/Settings';
 import StorageIcon from '@mui/icons-material/Storage';
@@ -26,7 +25,6 @@ const menuItems = [
   { text: 'Dashboard', icon: DashboardIcon, path: '/' },
   { text: 'Market Analytics', icon: ShowChartIcon, path: '/analytics' },
   { text: 'Upload Center', icon: CloudUploadIcon, path: '/upload' },
-  { text: 'AI Assistant', icon: SmartToyIcon, path: '/ai-assistant', badge: 'PRO' },
   { text: 'Reports', icon: AssessmentIcon, path: '/reports' },
   { text: 'Settings', icon: SettingsIcon, path: '/settings' },
 ];

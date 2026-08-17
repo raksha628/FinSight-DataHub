@@ -44,7 +44,7 @@ public class UploadController {
     @PreAuthorize("hasAnyRole('ANALYST', 'ADMIN')")
     @Operation(
         summary = "Upload CSV financial market data",
-        description = "Ingests financial data (Stocks, ETFs, Crypto, Mutual Funds, Forex, Sector Performance) via Strategy-pattern ETL pipeline. Roles: ANALYST, ADMIN."
+        description = "Ingests financial data (Stocks, ETFs, Mutual Funds) via Strategy-pattern ETL pipeline. Roles: ANALYST, ADMIN."
     )
     public ResponseEntity<ApiResponse<UploadResponseDto>> uploadCsv(
             @RequestParam("file") MultipartFile file,

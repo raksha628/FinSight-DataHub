@@ -47,26 +47,7 @@ spring:
     validate-on-migrate: true
     out-of-order: false
 
-  # ── Redis Cache ──────────────────────────────────────────────────────────────
-  data:
-    redis:
-      host: ${SPRING_DATA_REDIS_HOST:localhost}
-      port: ${SPRING_DATA_REDIS_PORT:6379}
-      password: ${SPRING_DATA_REDIS_PASSWORD:finsight_redis_pass}
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 10
-          max-idle: 5
-          min-idle: 2
-          max-wait: 1000ms
 
-  # ── Cache ────────────────────────────────────────────────────────────────────
-  cache:
-    type: redis
-    redis:
-      time-to-live: 3600000              # Default TTL: 1 hour (ms)
-      cache-null-values: false
 
   # ── File Upload ──────────────────────────────────────────────────────────────
   servlet:
@@ -103,25 +84,11 @@ jwt:
   secret: ${JWT_SECRET:default-dev-secret-change-in-production-must-be-256-bits-long}
   expiration-ms: ${JWT_EXPIRATION_MS:86400000}   # 24 hours
 
-# ── Gemini AI ────────────────────────────────────────────────────────────────
-gemini:
-  api-key: ${GEMINI_API_KEY:}
-  model: ${GEMINI_MODEL:gemini-1.5-flash}
-  base-url: https://generativelanguage.googleapis.com/v1beta
-  timeout-seconds: 30
-  max-output-tokens: 2048
 
-# ── Data Pipeline Directories ────────────────────────────────────────────────
-data:
-  incoming-path: ${DATA_INCOMING_PATH:./data/incoming}
-  archive-path: ${DATA_ARCHIVE_PATH:./data/archive}
-  error-path: ${DATA_ERROR_PATH:./data/error}
 
-# ── Scheduler ─────────────────────────────────────────────────────────────────
-scheduler:
-  folder-watcher:
-    enabled: true
-    cron: "0 * * * * *"           # Every minute
+
+
+
 
 # ── Actuator ─────────────────────────────────────────────────────────────────
 management:
@@ -141,7 +108,7 @@ info:
   app:
     name: FinSight DataHub
     version: 1.0.0
-    description: AI-Powered Financial Data Warehouse & Market Analytics Platform
+    description: Financial Data Ingestion and Analytics Platform
 
 # ── OpenAPI / Swagger ─────────────────────────────────────────────────────────
 springdoc:
