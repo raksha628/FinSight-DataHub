@@ -60,6 +60,14 @@ npm run dev
 ```
 
 ---
+### 4. Database (postgreSQL)
+```terminal
+
+# to check if the container is running -> docker ps
+# to enter into the database -> docker exec -it finsight-postgres psql -U finsight_user -d finsight_db
+# to view all relations -> \dt 
+# to view content of table -> \d table_name 
+```
 
 ## 🔐 Default Credentials
 
