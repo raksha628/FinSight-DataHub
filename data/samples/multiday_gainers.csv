@@ -1,0 +1,11 @@
+symbol,company_name,sector,trade_date,open_price,high_price,low_price,close_price,volume
+AMD,Advanced Micro Devices Inc.,Technology,2026-01-05,140.00,146.00,139.50,145.00,45000000
+AMD,Advanced Micro Devices Inc.,Technology,2026-01-06,145.00,162.00,144.50,160.00,82100000
+NFLX,Netflix Inc.,Communication Services,2026-01-05,470.00,482.00,468.00,480.00,11000000
+NFLX,Netflix Inc.,Communication Services,2026-01-06,480.00,515.00,479.00,510.00,14300000
+COIN,Coinbase Global Inc.,Financials,2026-01-05,150.00,161.00,149.00,160.00,16000000
+COIN,Coinbase Global Inc.,Financials,2026-01-06,160.00,178.00,159.00,175.00,21500000
+CRM,Salesforce Inc.,Technology,2026-01-05,240.00,252.00,239.00,250.00,14000000
+CRM,Salesforce Inc.,Technology,2026-01-06,250.00,268.00,249.00,265.00,18700000
+INTC,Intel Corporation,Technology,2026-01-05,40.00,42.50,39.80,42.00,35000000
+INTC,Intel Corporation,Technology,2026-01-06,42.00,45.00,41.90,44.50,49800000

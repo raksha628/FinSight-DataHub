@@ -1,0 +1,7 @@
+symbol,name,date,nav,open,high,low,close,volume,aum,expense_ratio,category
+XLK,Technology Select Sector SPDR,2026-01-05,210.45,209.80,211.50,208.90,210.15,6450000,62000000000.00,0.0009,Technology
+XLE,Energy Select Sector SPDR,2026-01-05,88.30,-87.50,89.10,87.00,88.75,14200000,38000000000.00,0.0009,Energy
+ARKK,ARK Innovation ETF,2026-01-05,48.20,47.90,49.10,47.60,,8920000,7500000000.00,0.0075,Thematic
+SMH,VanEck Semiconductor ETF,2026-01-05,245.10,244.00,247.30,243.50,246.80,3120000,,0.0035,Semiconductors
+EEM,iShares MSCI Emerging Markets ETF,2026-01-05,41.75,41.20,,41.00,-41.60,25600000,24000000000.00,,Emerging Markets
+TLT,iShares 20+ Year Treasury Bond ETF,,95.40,95.10,95.80,94.90,95.35,18300000,49000000000.00,0.0015,Fixed Income

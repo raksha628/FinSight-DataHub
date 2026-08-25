@@ -1,0 +1,9 @@
+symbol,company_name,sector,trade_date,open_price,high_price,low_price,close_price,volume
+META,Meta Platforms Inc.,Communication Services,2026-01-07,395.00,405.00,394.00,400.00,25000000
+META,Meta Platforms Inc.,Communication Services,2026-01-08,405.00,445.00,402.00,440.00,42000000
+MSFT,Microsoft Corporation,Technology,2026-01-07,378.00,382.00,377.00,380.00,22000000
+MSFT,Microsoft Corporation,Technology,2026-01-08,382.00,402.00,381.00,399.00,31000000
+LLY,Eli Lilly and Company,Healthcare,2026-01-07,595.00,605.00,592.00,600.00,4500000
+LLY,Eli Lilly and Company,Healthcare,2026-01-08,605.00,618.00,602.00,615.00,6200000
+DIS,The Walt Disney Company,Communication Services,2026-01-07,94.00,96.00,93.50,95.00,12000000
+DIS,The Walt Disney Company,Communication Services,2026-01-08,94.00,94.50,89.50,90.25,18500000

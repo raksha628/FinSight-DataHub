@@ -1,0 +1,9 @@
+symbol,company_name,sector,trade_date,open_price,high_price,low_price,close_price,volume
+SMCI,Super Micro Computer,Technology,2026-01-09,800.00,820.00,790.00,810.00,10000000
+SMCI,Super Micro Computer,Technology,2026-01-10,820.00,950.00,815.00,931.50,25000000
+PLTR,Palantir Technologies,Technology,2026-01-09,30.00,31.50,29.50,31.00,40000000
+PLTR,Palantir Technologies,Technology,2026-01-10,31.50,34.00,31.00,33.48,60000000
+BA,The Boeing Company,Industrials,2026-01-09,210.00,212.00,205.00,208.00,15000000
+BA,The Boeing Company,Industrials,2026-01-10,190.00,195.00,180.00,183.04,45000000
+INTC,Intel Corporation,Technology,2026-01-09,45.00,46.00,44.50,45.50,30000000
+INTC,Intel Corporation,Technology,2026-01-10,44.00,44.50,42.00,42.77,50000000
